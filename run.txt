@@ -1,0 +1,83 @@
+======================================================================
+       NIFTY 200 RSI Dashboard - Complete Windows Run Guide
+======================================================================
+
+The backend is a command-line data pipeline. It loads NSE data, calculates
+RSI values, and stores everything in MySQL. The Streamlit dashboard reads the
+stored data from MySQL.
+
+Run every command from the project root:
+
+  cd D:\Nifty-200_Stock_RSI_Index
+
+
+1. Start MySQL
+--------------
+Start the MySQL service using Windows Services or your MySQL installation.
+The database settings must exist in the root .env file:
+
+  DB_HOST=localhost
+  DB_PORT=3306
+  DB_NAME=cnx200_rsi_dashboard
+  DB_USER=root
+  DB_PASSWORD=your_password
+
+
+2. Install Dependencies
+------------------------
+
+  pip install -r requirements.txt
+
+
+3. Initialize and Verify the Active Database
+---------------------------------------------
+Creates the database schema and verifies the MySQL connection:
+
+  python main.py --init-db
+  python main.py --test-db
+
+
+4. Load the NIFTY 200 Universe
+------------------------------
+Fetches the current NIFTY 200 stocks and stores them in stock_master:
+
+  python main.py --sync-universe
+
+
+5. Load Historical Prices and RSI Data
+--------------------------------------
+Backfills historical prices, recovers missing records, calculates RSI values,
+and generates the Excel report:
+
+  python main.py --backfill-historical
+  python main.py --recover-missing
+  python main.py --generate-excel
+
+
+6. Start the Dashboard
+----------------------
+Keep the previous commands complete, then open a second PowerShell window.
+From the project root, run:
+
+  cd D:\Nifty-200_Stock_RSI_Index
+  streamlit run frontend/streamlit_app.py
+
+Open the displayed local URL, normally:
+
+  http://localhost:8501
+
+
+7. Dashboard Refresh
+--------------------
+Use the sun/moon icon in the sidebar to switch between light and dark themes.
+Use 'Refresh dashboard data' to clear cached reads and reload from MySQL.
+This button does not start NSE ingestion.
+
+
+Optional Backend Checks
+-----------------------
+
+  python main.py --test-nselib
+  python scripts/verify_stabilization.py
+
+======================================================================
