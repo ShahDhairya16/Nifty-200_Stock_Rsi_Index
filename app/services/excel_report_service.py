@@ -15,7 +15,7 @@ from app.database.repositories import (
 )
 from app.services.ingestion_service import IngestionService
 from app.services.rsi_service import RSIService
-from app.utils.date_utils import format_date_iso
+from app.utils.date_utils import format_date_iso, parse_date
 from app.utils.logger import logger
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -31,13 +31,17 @@ class ExcelReportService:
     @staticmethod
     def generate_nifty200_excel_report(
         output_dir: Optional[Path] = None,
-        refresh_market_data: bool = True
+        refresh_market_data: bool = True,
+        end_date: Optional[date] = None
     ) -> Dict[str, Any]:
         """
         Orchestrates market freshness check, RSI recalculation, and Excel file generation.
         Returns report summary dictionary.
         """
         logger.info("Starting NIFTY 200 Excel Report Generation...")
+        report_end_date = parse_date(end_date) if end_date is not None else date.today()
+        if report_end_date is None:
+            raise ValueError("A valid report end date is required.")
 
         # 1. Trigger Data Freshness Check & Ingestion
         with get_db_session() as session:
@@ -62,7 +66,9 @@ class ExcelReportService:
         # 2. Retrieve Database Data
         with get_db_session() as session:
             # Get latest 70 distinct trading dates
-            trading_dates = DailyPriceRepository.get_last_n_trading_days(session, n=70)
+            trading_dates = DailyPriceRepository.get_last_n_trading_days(
+                session, n=70, end_date=report_end_date
+            )
             if not trading_dates:
                 raise ValueError("No trading dates found in daily_prices. Please run data ingestion first.")
 
@@ -76,7 +82,9 @@ class ExcelReportService:
             matrix_data = DailyPriceRepository.get_closing_price_matrix_data(session, trading_dates)
 
             # Get latest RSI rankings
-            rsi_rankings = RSIMetricsRepository.get_latest_rsi_rankings(session)
+            rsi_rankings = RSIMetricsRepository.get_latest_rsi_rankings(
+                session, end_date=report_end_date
+            )
 
         # 3. Pivot Closing Price Matrix into DataFrame
         if matrix_data:

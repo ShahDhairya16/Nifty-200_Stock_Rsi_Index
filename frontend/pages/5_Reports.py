@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import date
 import streamlit as st
 from frontend.components.sidebar import render_sidebar
 from app.services.excel_report_service import ExcelReportService
@@ -7,10 +8,20 @@ render_sidebar()
 st.title("Reports")
 st.caption("Generate the backend-produced workbook containing the last 70 trading days and RSI ranking.")
 
-if st.button("Generate Latest Excel Report", type="primary"):
+report_date = st.date_input(
+    "Report end date",
+    value=date.today(),
+    max_value=date.today(),
+    help="The workbook includes the 70 trading days ending on or before this date."
+)
+
+if st.button("Generate Excel Report", type="primary"):
     try:
         with st.spinner("Generating latest Excel report..."):
-            result = ExcelReportService.generate_nifty200_excel_report(refresh_market_data=False)
+            result = ExcelReportService.generate_nifty200_excel_report(
+                refresh_market_data=False,
+                end_date=report_date
+            )
         st.session_state["latest_report"] = result
         st.success(f"Report generated for {result['latest_trade_date']}.")
     except Exception:

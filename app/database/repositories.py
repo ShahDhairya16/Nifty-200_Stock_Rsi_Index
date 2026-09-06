@@ -296,14 +296,24 @@ class DailyPriceRepository:
         return missing
 
     @staticmethod
-    def get_last_n_trading_days(session: Session, n: int = 70) -> List[date]:
+    def get_last_n_trading_days(
+        session: Session,
+        n: int = 70,
+        end_date: Optional[date] = None
+    ) -> List[date]:
         """
-        Retrieves the latest N distinct trading dates across all system stock price records.
+        Retrieves the latest N distinct trading dates across all system stock price records,
+        optionally ending on or before end_date.
         Returns dates sorted in ascending order (oldest to newest).
         """
+        filters = []
+        if end_date is not None:
+            filters.append(DailyPrice.trade_date <= end_date)
+
         query = (
             select(DailyPrice.trade_date)
             .distinct()
+            .where(*filters)
             .order_by(DailyPrice.trade_date.desc())
             .limit(n)
         )
@@ -552,17 +562,27 @@ class RSIMetricsRepository:
         )
 
     @staticmethod
-    def get_latest_rsi_rankings(session: Session) -> List[Dict[str, Any]]:
+    def get_latest_rsi_rankings(
+        session: Session,
+        end_date: Optional[date] = None
+    ) -> List[Dict[str, Any]]:
         """
-        Retrieves the latest calculated RSI metrics for all active stocks sorted by average_rsi DESC.
+        Retrieves the latest calculated RSI metrics on or before end_date for all
+        active stocks sorted by average_rsi DESC. With no end_date, retrieves the
+        latest available metrics.
         Returns list of dicts with symbol, company_name, trade_date, rsi_22, rsi_44, rsi_66, average_rsi.
         """
         # Subquery for max trade_date per stock_id
+        metric_filters = []
+        if end_date is not None:
+            metric_filters.append(StockRSIMetrics.trade_date <= end_date)
+
         subq = (
             select(
                 StockRSIMetrics.stock_id,
                 func.max(StockRSIMetrics.trade_date).label("max_date")
             )
+            .where(*metric_filters)
             .group_by(StockRSIMetrics.stock_id)
             .subquery()
         )
