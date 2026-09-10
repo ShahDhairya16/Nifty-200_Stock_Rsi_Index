@@ -5,7 +5,6 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from app.database.init_db import init_database
 from app.services.stock_universe_service import StockUniverseService
 from app.utils.logger import logger
 
@@ -16,11 +15,6 @@ def main():
 
     print("Starting NIFTY 200 Universe Sync...\n")
     print("Fetching latest NIFTY 200 constituents...\n")
-
-    # Initialize schema if needed
-    if not init_database():
-        print("[FAILED] Database initialization failed.")
-        sys.exit(1)
 
     summary = StockUniverseService.sync_nifty200_universe()
 

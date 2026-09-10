@@ -6,8 +6,6 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from app.config import config
-from app.database.init_db import init_database
 from app.services.ingestion_service import IngestionService
 from app.utils.date_utils import parse_date, get_default_start_date, format_date_iso
 from app.utils.logger import logger
@@ -17,11 +15,11 @@ def main():
         description="CNX 200 RSI Dashboard - Historical Market Data Backfill"
     )
     parser.add_argument(
-        "--start-date", type=str, default=config.HISTORICAL_START_DATE,
+        "--start-date", type=str, default=None,
         help="Start date for backfill (YYYY-MM-DD or DD-MM-YYYY). Default: 1 year prior."
     )
     parser.add_argument(
-        "--end-date", type=str, default=config.HISTORICAL_END_DATE,
+        "--end-date", type=str, default=None,
         help="End date for backfill (YYYY-MM-DD or DD-MM-YYYY). Default: Today."
     )
     parser.add_argument(
@@ -34,11 +32,6 @@ def main():
     print("\n" + "=" * 60)
     print("      CNX 200 RSI Dashboard - Historical Data Backfill     ")
     print("=" * 60 + "\n")
-
-    # Initialize schema if needed
-    if not init_database():
-        print("[FAILED] Database initialization failed.")
-        sys.exit(1)
 
     start = parse_date(args.start_date) if args.start_date else get_default_start_date(years_back=1)
     end = parse_date(args.end_date) if args.end_date else parse_date("today") or get_default_start_date(0)
@@ -58,7 +51,6 @@ def main():
     print("\n" + "=" * 60)
     print("                      Final Summary                       ")
     print("=" * 60)
-    print(f"Job Run ID: {summary.get('job_run_id')}")
     print(f"Stocks Processed: {summary['total_stocks']}")
     print(f"Successful: {summary['successful_stocks']}")
     print(f"Failed: {summary['failed_stocks']}")

@@ -3,48 +3,27 @@
 ======================================================================
 
 The backend is a command-line data pipeline. It loads NSE data, calculates
-RSI values, and stores everything in MySQL. The Streamlit dashboard reads the
-stored data from MySQL.
+RSI values, and stores everything in local JSON/CSV files under data/.
 
 Run every command from the project root:
 
   cd D:\Nifty-200_Stock_RSI_Index
 
 
-1. Start MySQL
---------------
-Start the MySQL service using Windows Services or your MySQL installation.
-The database settings must exist in the root .env file:
-
-  DB_HOST=localhost
-  DB_PORT=3306
-  DB_NAME=cnx200_rsi_dashboard
-  DB_USER=root
-  DB_PASSWORD=your_password
-
-
-2. Install Dependencies
+1. Install Dependencies
 ------------------------
 
   pip install -r requirements.txt
 
 
-3. Initialize and Verify the Active Database
----------------------------------------------
-Creates the database schema and verifies the MySQL connection:
-
-  python main.py --init-db
-  python main.py --test-db
-
-
-4. Load the NIFTY 200 Universe
+2. Load the NIFTY 200 Universe
 ------------------------------
-Fetches the current NIFTY 200 stocks and stores them in stock_master:
+Fetches the current NIFTY 200 stocks and stores them in data/stocks.json:
 
   python main.py --sync-universe
 
 
-5. Load Historical Prices and RSI Data
+3. Load Historical Prices and RSI Data
 --------------------------------------
 Backfills historical prices, recovers missing records, calculates RSI values,
 and generates the Excel report:
@@ -52,9 +31,15 @@ and generates the Excel report:
   python main.py --backfill-historical
   python main.py --recover-missing
   python main.py --generate-excel
+ 
+To generate the Excel report through a specific date, use `--end-date`:
+
+  python main.py --generate-excel --end-date 2026-09-07
+
+The generated workbook is saved in the output/ folder.
 
 
-6. Start the Dashboard
+4. Start the Dashboard
 ----------------------
 Keep the previous commands complete, then open a second PowerShell window.
 From the project root, run:
@@ -67,17 +52,16 @@ Open the displayed local URL, normally:
   http://localhost:8501
 
 
-7. Dashboard Refresh
+5. Dashboard Refresh
 --------------------
 Use the sun/moon icon in the sidebar to switch between light and dark themes.
-Use 'Refresh dashboard data' to clear cached reads and reload from MySQL.
+Use 'Refresh dashboard data' to clear cached reads and reload local files.
 This button does not start NSE ingestion.
 
 
-Optional Backend Checks
------------------------
+Optional Backend Check
+----------------------
 
-  python main.py --test-nselib
-  python scripts/verify_stabilization.py
+  python -m compileall app frontend main.py
 
 ======================================================================

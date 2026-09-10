@@ -1,0 +1,1602 @@
+[
+  {
+    "symbol": "360ONE",
+    "company_name": "360 ONE WAM Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ABB",
+    "company_name": "ABB India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ABCAPITAL",
+    "company_name": "Aditya Birla Capital Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ADANIENSOL",
+    "company_name": "Adani Energy Solutions Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ADANIENT",
+    "company_name": "Adani Enterprises Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ADANIGREEN",
+    "company_name": "Adani Green Energy Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ADANIPORTS",
+    "company_name": "Adani Ports and Special Economic Zone Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ADANIPOWER",
+    "company_name": "Adani Power Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ALKEM",
+    "company_name": "Alkem Laboratories Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "AMBUJACEM",
+    "company_name": "Ambuja Cements Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "APLAPOLLO",
+    "company_name": "APL Apollo Tubes Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "APOLLOHOSP",
+    "company_name": "Apollo Hospitals Enterprise Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ASHOKLEY",
+    "company_name": "Ashok Leyland Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ASIANPAINT",
+    "company_name": "Asian Paints Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ASTRAL",
+    "company_name": "Astral Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ATGL",
+    "company_name": "Adani Total Gas Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "AUBANK",
+    "company_name": "AU Small Finance Bank Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "AUROPHARMA",
+    "company_name": "Aurobindo Pharma Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "AXISBANK",
+    "company_name": "Axis Bank Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BAJAJ-AUTO",
+    "company_name": "Bajaj Auto Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BAJAJFINSV",
+    "company_name": "Bajaj Finserv Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BAJAJHLDNG",
+    "company_name": "Bajaj Holdings & Investment Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BAJFINANCE",
+    "company_name": "Bajaj Finance Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BANKBARODA",
+    "company_name": "Bank of Baroda",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BANKINDIA",
+    "company_name": "Bank of India",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BDL",
+    "company_name": "Bharat Dynamics Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BEL",
+    "company_name": "Bharat Electronics Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BHARATFORG",
+    "company_name": "Bharat Forge Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BHARTIARTL",
+    "company_name": "Bharti Airtel Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BHEL",
+    "company_name": "Bharat Heavy Electricals Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BIOCON",
+    "company_name": "Biocon Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BLUESTARCO",
+    "company_name": "Blue Star Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BOSCHLTD",
+    "company_name": "Bosch Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BPCL",
+    "company_name": "Bharat Petroleum Corporation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BRITANNIA",
+    "company_name": "Britannia Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "BSE",
+    "company_name": "BSE Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "CANBK",
+    "company_name": "Canara Bank",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "CGPOWER",
+    "company_name": "CG Power and Industrial Solutions Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "CHOLAFIN",
+    "company_name": "Cholamandalam Investment and Finance Company Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "CIPLA",
+    "company_name": "Cipla Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "COALINDIA",
+    "company_name": "Coal India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "COCHINSHIP",
+    "company_name": "Cochin Shipyard Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "COFORGE",
+    "company_name": "Coforge Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "COLPAL",
+    "company_name": "Colgate Palmolive (India) Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "CONCOR",
+    "company_name": "Container Corporation of India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "COROMANDEL",
+    "company_name": "Coromandel International Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "CUMMINSIND",
+    "company_name": "Cummins India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "DABUR",
+    "company_name": "Dabur India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "DIVISLAB",
+    "company_name": "Divi's Laboratories Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "DIXON",
+    "company_name": "Dixon Technologies (India) Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "DLF",
+    "company_name": "DLF Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "DMART",
+    "company_name": "Avenue Supermarts Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "DRREDDY",
+    "company_name": "Dr. Reddy's Laboratories Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "EICHERMOT",
+    "company_name": "Eicher Motors Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ENRIN",
+    "company_name": "Siemens Energy India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ETERNAL",
+    "company_name": "Eternal Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "EXIDEIND",
+    "company_name": "Exide Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "FEDERALBNK",
+    "company_name": "Federal Bank Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "FORTIS",
+    "company_name": "Fortis Healthcare Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "GAIL",
+    "company_name": "GAIL (India) Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "GLENMARK",
+    "company_name": "Glenmark Pharmaceuticals Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "GMRAIRPORT",
+    "company_name": "GMR Airports Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "GODFRYPHLP",
+    "company_name": "Godfrey Phillips India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "GODREJCP",
+    "company_name": "Godrej Consumer Products Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "GODREJPROP",
+    "company_name": "Godrej Properties Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "GRASIM",
+    "company_name": "Grasim Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "GROWW",
+    "company_name": "Billionbrains Garage Ventures Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "GVT&D",
+    "company_name": "GE Vernova T&D India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HAL",
+    "company_name": "Hindustan Aeronautics Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HAVELLS",
+    "company_name": "Havells India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HCLTECH",
+    "company_name": "HCL Technologies Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HDFCAMC",
+    "company_name": "HDFC Asset Management Company Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HDFCBANK",
+    "company_name": "HDFC Bank Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HDFCLIFE",
+    "company_name": "HDFC Life Insurance Company Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HEROMOTOCO",
+    "company_name": "Hero MotoCorp Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HINDALCO",
+    "company_name": "Hindalco Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HINDPETRO",
+    "company_name": "Hindustan Petroleum Corporation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HINDUNILVR",
+    "company_name": "Hindustan Unilever Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HINDZINC",
+    "company_name": "Hindustan Zinc Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HUDCO",
+    "company_name": "Housing & Urban Development Corporation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "HYUNDAI",
+    "company_name": "Hyundai Motor India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ICICIAMC",
+    "company_name": "ICICI Prudential Asset Management Company Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ICICIBANK",
+    "company_name": "ICICI Bank Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ICICIGI",
+    "company_name": "ICICI Lombard General Insurance Company Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "IDEA",
+    "company_name": "Vodafone Idea Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "IDFCFIRSTB",
+    "company_name": "IDFC First Bank Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "INDHOTEL",
+    "company_name": "Indian Hotels Co. Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "INDIANB",
+    "company_name": "Indian Bank",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "INDIGO",
+    "company_name": "InterGlobe Aviation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "INDUSINDBK",
+    "company_name": "IndusInd Bank Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "INDUSTOWER",
+    "company_name": "Indus Towers Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "INFY",
+    "company_name": "Infosys Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "IOC",
+    "company_name": "Indian Oil Corporation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "IRCTC",
+    "company_name": "Indian Railway Catering And Tourism Corporation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "IREDA",
+    "company_name": "Indian Renewable Energy Development Agency Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "IRFC",
+    "company_name": "Indian Railway Finance Corporation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ITC",
+    "company_name": "ITC Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "JINDALSTEL",
+    "company_name": "Jindal Steel Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "JIOFIN",
+    "company_name": "Jio Financial Services Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "JSWENERGY",
+    "company_name": "JSW Energy Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "JSWSTEEL",
+    "company_name": "JSW Steel Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "JUBLFOOD",
+    "company_name": "Jubilant Foodworks Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "KALYANKJIL",
+    "company_name": "Kalyan Jewellers India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "KEI",
+    "company_name": "KEI Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "KOTAKBANK",
+    "company_name": "Kotak Mahindra Bank Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "KPITTECH",
+    "company_name": "KPIT Technologies Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LAURUSLABS",
+    "company_name": "Laurus Labs Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LENSKART",
+    "company_name": "Lenskart Solutions Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LGEINDIA",
+    "company_name": "LG Electronics India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LICHSGFIN",
+    "company_name": "LIC Housing Finance Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LODHA",
+    "company_name": "Lodha Developers Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LT",
+    "company_name": "Larsen & Toubro Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LTF",
+    "company_name": "L&T Finance Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LTM",
+    "company_name": "LTM Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LUPIN",
+    "company_name": "Lupin Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "M&M",
+    "company_name": "Mahindra & Mahindra Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "M&MFIN",
+    "company_name": "Mahindra & Mahindra Financial Services Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MANKIND",
+    "company_name": "Mankind Pharma Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MARICO",
+    "company_name": "Marico Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MARUTI",
+    "company_name": "Maruti Suzuki India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MAXHEALTH",
+    "company_name": "Max Healthcare Institute Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MAZDOCK",
+    "company_name": "Mazagoan Dock Shipbuilders Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MCX",
+    "company_name": "Multi Commodity Exchange of India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MFSL",
+    "company_name": "Max Financial Services Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MOTHERSON",
+    "company_name": "Samvardhana Motherson International Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MOTILALOFS",
+    "company_name": "Motilal Oswal Financial Services Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MPHASIS",
+    "company_name": "MphasiS Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MRF",
+    "company_name": "MRF Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MUTHOOTFIN",
+    "company_name": "Muthoot Finance Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "NATIONALUM",
+    "company_name": "National Aluminium Co. Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "NAUKRI",
+    "company_name": "Info Edge (India) Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "NESTLEIND",
+    "company_name": "Nestle India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "NHPC",
+    "company_name": "NHPC Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "NMDC",
+    "company_name": "NMDC Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "NTPC",
+    "company_name": "NTPC Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "NYKAA",
+    "company_name": "FSN E-Commerce Ventures Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "OBEROIRLTY",
+    "company_name": "Oberoi Realty Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "OFSS",
+    "company_name": "Oracle Financial Services Software Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "OIL",
+    "company_name": "Oil India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ONGC",
+    "company_name": "Oil & Natural Gas Corporation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PAGEIND",
+    "company_name": "Page Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PATANJALI",
+    "company_name": "Patanjali Foods Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PAYTM",
+    "company_name": "One 97 Communications Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PERSISTENT",
+    "company_name": "Persistent Systems Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PFC",
+    "company_name": "Power Finance Corporation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PHOENIXLTD",
+    "company_name": "Phoenix Mills Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PIDILITIND",
+    "company_name": "Pidilite Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PIIND",
+    "company_name": "PI Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PNB",
+    "company_name": "Punjab National Bank",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "POLICYBZR",
+    "company_name": "PB Fintech Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "POLYCAB",
+    "company_name": "Polycab India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "POWERGRID",
+    "company_name": "Power Grid Corporation of India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "POWERINDIA",
+    "company_name": "Hitachi Energy India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PREMIERENE",
+    "company_name": "Premier Energies Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "PRESTIGE",
+    "company_name": "Prestige Estates Projects Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "RADICO",
+    "company_name": "Radico Khaitan Ltd",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "RECLTD",
+    "company_name": "REC Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "RELIANCE",
+    "company_name": "Reliance Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "RVNL",
+    "company_name": "Rail Vikas Nigam Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SAIL",
+    "company_name": "Steel Authority of India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SBICARD",
+    "company_name": "SBI Cards and Payment Services Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SBILIFE",
+    "company_name": "SBI Life Insurance Company Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SBIN",
+    "company_name": "State Bank of India",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SHREECEM",
+    "company_name": "Shree Cement Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SHRIRAMFIN",
+    "company_name": "Shriram Finance Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SIEMENS",
+    "company_name": "Siemens Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SOLARINDS",
+    "company_name": "Solar Industries India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SRF",
+    "company_name": "SRF Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SUNPHARMA",
+    "company_name": "Sun Pharmaceutical Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SUPREMEIND",
+    "company_name": "Supreme Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SUZLON",
+    "company_name": "Suzlon Energy Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "SWIGGY",
+    "company_name": "Swiggy Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TATACAP",
+    "company_name": "Tata Capital Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TATACOMM",
+    "company_name": "Tata Communications Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TATACONSUM",
+    "company_name": "Tata Consumer Products Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TATAELXSI",
+    "company_name": "Tata Elxsi Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TATAINVEST",
+    "company_name": "Tata Investment Corporation Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TATAPOWER",
+    "company_name": "Tata Power Co. Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TATASTEEL",
+    "company_name": "Tata Steel Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TCS",
+    "company_name": "Tata Consultancy Services Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TECHM",
+    "company_name": "Tech Mahindra Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TIINDIA",
+    "company_name": "Tube Investments of India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TITAN",
+    "company_name": "Titan Company Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TMCV",
+    "company_name": "Tata Motors Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TMPV",
+    "company_name": "Tata Motors Passenger Vehicles Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TORNTPHARM",
+    "company_name": "Torrent Pharmaceuticals Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TRENT",
+    "company_name": "Trent Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "TVSMOTOR",
+    "company_name": "TVS Motor Company Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ULTRACEMCO",
+    "company_name": "UltraTech Cement Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "UNIONBANK",
+    "company_name": "Union Bank of India",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "UNITDSPR",
+    "company_name": "United Spirits Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "UPL",
+    "company_name": "UPL Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "VBL",
+    "company_name": "Varun Beverages Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "VEDL",
+    "company_name": "Vedanta Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "VMM",
+    "company_name": "Vishal Mega Mart Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "VOLTAS",
+    "company_name": "Voltas Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "WAAREEENER",
+    "company_name": "Waaree Energies Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "WIPRO",
+    "company_name": "Wipro Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "YESBANK",
+    "company_name": "Yes Bank Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "ZYDUSLIFE",
+    "company_name": "Zydus Lifesciences Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-09-08"
+  }
+]

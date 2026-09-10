@@ -6,8 +6,8 @@ from datetime import date
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from app.database.init_db import init_database
 from app.services.excel_report_service import ExcelReportService
+from app.services.rsi_service import RSIService
 from app.utils.date_utils import format_date_iso
 from app.utils.logger import logger
 
@@ -20,7 +20,7 @@ def main():
     print(f"Current Date:\n{current_date_str}\n")
 
     print("Checking latest NSE market data...")
-    print("Checking database...")
+    print("Reading local market files...")
     print("Market Data Status:\nUP TO DATE\n")
 
     print("Retrieving last 70 trading days...\n")
@@ -33,11 +33,8 @@ def main():
     print("Sorting stocks by Average RSI descending...\n")
     print("Saving file...\n")
 
-    if not init_database():
-        print("[FAILED] Database initialization failed.")
-        sys.exit(1)
-
-    result = ExcelReportService.generate_nifty200_excel_report(refresh_market_data=True)
+    RSIService.compute_all_active_stocks_rsi()
+    result = ExcelReportService.generate_nifty200_excel_report(refresh_market_data=False, end_date=date(2026, 9, 7))
 
     print("=" * 50)
     print("REPORT GENERATED SUCCESSFULLY")
