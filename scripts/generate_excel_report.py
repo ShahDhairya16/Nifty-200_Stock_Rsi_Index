@@ -19,8 +19,7 @@ def main():
     current_date_str = format_date_iso(date.today())
     print(f"Current Date:\n{current_date_str}\n")
 
-    print("Checking latest NSE market data...")
-    print("Reading local market files...")
+    print("Checking latest NSE market data in MongoDB...")
     print("Market Data Status:\nUP TO DATE\n")
 
     print("Retrieving last 70 trading days...\n")
