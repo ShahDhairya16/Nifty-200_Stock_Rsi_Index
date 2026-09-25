@@ -41,4 +41,4 @@ try:
                  column_config={name: st.column_config.NumberColumn(format="%.2f")
                                 for name in ["RSI 22", "RSI 44", "RSI 66", "Average RSI"]})
 except Exception:
-    st.error("Unable to load the RSI ranking. Please verify that the database service is running.")
+    st.error("Unable to load the RSI ranking. Check the MongoDB settings in Streamlit Secrets or your local .env, then try again.")

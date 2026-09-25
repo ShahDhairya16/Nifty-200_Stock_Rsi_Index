@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, Optional
 import openpyxl
@@ -20,6 +21,7 @@ class ExcelReportService:
         output_dir: Optional[Path] = None,
         refresh_market_data: bool = True,
         end_date: Optional[date] = None,
+        in_memory: bool = False,
     ) -> Dict[str, Any]:
         report_end = parse_date(end_date) if end_date is not None else date.today()
         prices = PriceRepository.load_prices(end_date=report_end)
@@ -68,14 +70,22 @@ class ExcelReportService:
                     max(max(len(str(cell.value or "")) for cell in column) + 2, 12), 38
                 )
 
-        target_dir = output_dir or OUTPUT_DIR
-        target_dir.mkdir(parents=True, exist_ok=True)
         filename = f"NIFTY200_RSI_Report_{report_end.isoformat()}_{datetime.now():%H%M%S}.xlsx"
-        path = target_dir / filename
-        workbook.save(path)
+        if in_memory:
+            buffer = BytesIO()
+            workbook.save(buffer)
+            report_data = buffer.getvalue()
+            path = None
+        else:
+            target_dir = output_dir or OUTPUT_DIR
+            target_dir.mkdir(parents=True, exist_ok=True)
+            path = target_dir / filename
+            workbook.save(path)
+            report_data = None
         return {
             "success": True,
-            "file_path": str(path),
+            "file_path": str(path) if path else None,
+            "data": report_data,
             "filename": filename,
             "latest_trade_date": format_date_iso(max(dates)),
             "trading_days": len(dates),

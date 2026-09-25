@@ -19,9 +19,9 @@ def get_mongo_client() -> MongoClient:
                 maxPoolSize=50,
                 minPoolSize=5,
             )
-            logger.info(f"MongoDB client initialized for URI: {config.MONGO_URI}")
+            logger.info("MongoDB client initialized.")
         except Exception as e:
-            logger.error(f"Failed to initialize MongoDB client: {e}")
+            logger.error("Failed to initialize MongoDB client (%s).", type(e).__name__)
             raise
     return _client
 
@@ -41,7 +41,7 @@ def check_db_connection() -> bool:
         logger.info(f"MongoDB connection test successful on target '{config.MONGO_DB_NAME}'.")
         return True
     except Exception as e:
-        logger.error(f"MongoDB connection check failed: {e}")
+        logger.error("MongoDB connection check failed (%s).", type(e).__name__)
         return False
 
 

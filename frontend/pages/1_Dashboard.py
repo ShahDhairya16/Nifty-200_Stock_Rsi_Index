@@ -32,4 +32,4 @@ try:
     st.subheader("Average RSI Distribution")
     rsi_distribution(ranking.dropna(subset=["average_rsi"]))
 except Exception:
-    st.error("Unable to load dashboard data. Please verify that the database service is running.")
+    st.error("Unable to load dashboard data. Check the MongoDB settings in Streamlit Secrets or your local .env, then try again.")
