@@ -47,4 +47,4 @@ try:
                                            "rsi_22": "RSI 22", "rsi_44": "RSI 44", "rsi_66": "RSI 66",
                                            "average_rsi": "Average RSI"}), hide_index=True, width='stretch')
 except Exception:
-    st.error("Unable to load stock analysis. Please verify that the database service is running.")
+    st.error("Unable to load stock analysis. Check the MongoDB settings in Streamlit Secrets or your local .env, then try again.")

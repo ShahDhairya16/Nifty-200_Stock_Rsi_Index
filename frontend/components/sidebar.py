@@ -15,9 +15,15 @@ def render_sidebar():
             with st.spinner("Checking for missing data…"):
                 try:
                     from app.services.data_update_service import DataUpdateService
-                    result = DataUpdateService.fetch_and_update_missing_days()
-                except Exception as exc:
-                    st.error(f"Update error: {exc}")
+                    with st.status("Checking for missing market data…", expanded=True) as status:
+                        result = DataUpdateService.fetch_and_update_missing_days(
+                            progress_callback=lambda done, total, day: status.update(
+                                label=f"Processed {done} of {total} days through {day}"
+                            )
+                        )
+                        status.update(label="Data update finished", state="complete")
+                except Exception:
+                    st.error("Unable to update market data. Check the database connection and try again.")
                     result = None
 
             if result is not None:
@@ -44,10 +50,9 @@ def render_sidebar():
                         f"⚠️ Partial update: {days_fetched}/{days_checked} days, "
                         f"{records:,} records. {len(errors)} error(s)."
                     )
-                    for e in errors[:3]:
-                        st.caption(f"• {e}")
+                    st.caption("Check the application logs for technical details.")
                 else:
-                    st.error(f"❌ Update failed: {'; '.join(errors[:2])}")
+                    st.error("❌ Update failed. Check the database connection and application logs.")
 
             refresh_data()
             st.rerun()

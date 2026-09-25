@@ -6,6 +6,7 @@ from app.services.data_normalizer import DataNormalizer
 from app.services.nse_client import NSEClient
 from app.utils.date_utils import format_date_iso, get_default_start_date, parse_date
 from app.utils.logger import logger
+from app.config import config
 
 
 class HistoricalDataService:
@@ -18,8 +19,10 @@ class HistoricalDataService:
         symbols: Optional[List[str]] = None,
         session: Optional[Any] = None,
     ) -> Dict[str, Any]:
-        parsed_start = parse_date(start_date) if start_date else get_default_start_date(years_back=1)
-        parsed_end = parse_date(end_date) if end_date else date.today()
+        configured_start = start_date or config.HISTORICAL_START_DATE or None
+        configured_end = end_date or config.HISTORICAL_END_DATE or None
+        parsed_start = parse_date(configured_start) if configured_start else get_default_start_date(years_back=1)
+        parsed_end = parse_date(configured_end) if configured_end else date.today()
 
         stocks = StockRepository.get_active_stocks()
         if symbols:

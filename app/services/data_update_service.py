@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Callable
 
 from app.database.repositories import StockRepository, PriceRepository, RSIRepository
 from app.services.data_normalizer import DataNormalizer
@@ -34,7 +34,9 @@ class DataUpdateService:
         return missing
 
     @staticmethod
-    def fetch_and_update_missing_days() -> Dict[str, Any]:
+    def fetch_and_update_missing_days(
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    ) -> Dict[str, Any]:
         """
         Main entry point called from the dashboard refresh.
         1. Determines which trading days are missing from MongoDB.
@@ -87,7 +89,7 @@ class DataUpdateService:
         active_stocks = StockRepository.get_active_stocks()
         active_symbols = {stock["symbol"] for stock in active_stocks}
 
-        for trade_date in missing_days:
+        for index, trade_date in enumerate(missing_days, 1):
             date_str = format_date_iso(trade_date)
             try:
                 df_bhav = NSEClient.get_daily_market_data(trade_date)
@@ -118,6 +120,9 @@ class DataUpdateService:
                 err_msg = f"Failed to fetch/upsert Bhavcopy for {date_str}: {exc}"
                 summary["errors"].append(err_msg)
                 logger.error(f"DataUpdateService: {err_msg}")
+            finally:
+                if progress_callback:
+                    progress_callback(index, len(missing_days), date_str)
 
         # Always recompute RSI after any new prices land
         if summary["days_with_data"] > 0 or summary["total_records_upserted"] > 0:
