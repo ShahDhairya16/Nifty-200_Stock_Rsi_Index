@@ -1,67 +1,181 @@
 ======================================================================
-       NIFTY 200 RSI Dashboard - Complete Windows Run Guide
+       NIFTY 200 RSI Dashboard - Complete Windows Run Guide (MongoDB)
 ======================================================================
 
-The backend is a command-line data pipeline. It loads NSE data, calculates
-RSI values, and stores everything in local JSON/CSV files under data/.
+Database  : MongoDB (local) — mongodb://localhost:27017/
+Dashboard : Streamlit        — http://localhost:8501
+Pipeline  : NSE Bhavcopy + Historical Data via nselib
 
 Run every command from the project root:
 
   cd D:\Nifty-200_Stock_RSI_Index
 
+======================================================================
+  FIRST-TIME SETUP  (do this once when cloning the project)
+======================================================================
 
-1. Install Dependencies
-------------------------
-
+STEP 1 — Install Python dependencies
+--------------------------------------
   pip install -r requirements.txt
 
+  Required packages: python-dotenv, nselib, tenacity, pandas, openpyxl,
+                     streamlit, plotly, pymongo
 
-2. Load the NIFTY 200 Universe
+
+STEP 2 — Configure environment variables
+-----------------------------------------
+  Copy .env.example to .env (already done if .env exists):
+
+    copy .env.example .env
+
+  Edit .env if your MongoDB runs on a different host or port:
+
+    MONGO_URI=mongodb://localhost:27017/
+    MONGO_DB_NAME=cnx200_rsi_dashboard
+    LOG_LEVEL=INFO
+
+
+STEP 3 — Ensure MongoDB is running
+------------------------------------
+  Start MongoDB service (if not already running as a Windows service):
+
+    net start MongoDB
+
+  Verify it is up:
+
+    python scripts/test_mongodb.py
+
+  If this is the first run, initialize collections and indexes:
+
+    python main.py --init-db
+
+
+STEP 4 — Sync NIFTY 200 stock universe
+----------------------------------------
+  Fetches current NIFTY 200 constituents from NSE and upserts into MongoDB:
+
+    python main.py --sync-universe
+
+  Expected output: 200 stocks inserted / updated.
+
+
+STEP 5 — Backfill historical price data (1 year)
+--------------------------------------------------
+  Downloads last 1 year of historical OHLCV data for all 200 stocks:
+
+    python main.py --backfill-historical
+
+  To backfill for a custom date range:
+
+    python main.py --backfill-historical --start-date 2025-01-01 --end-date 2026-09-23
+
+  To backfill specific stocks only:
+
+    python main.py --backfill-historical --symbols RELIANCE TCS INFY
+
+  Note: This takes 10-30 minutes on the first run (200 stocks × NSE rate limits).
+
+
+STEP 6 — Compute RSI metrics
 ------------------------------
-Fetches the current NIFTY 200 stocks and stores them in data/stocks.json:
+  Computes RSI 22, RSI 44, RSI 66, and Average RSI from stored prices:
 
-  python main.py --sync-universe
-
-
-3. Load Historical Prices and RSI Data
---------------------------------------
-Backfills historical prices, recovers missing records, calculates RSI values,
-and generates the Excel report:
-
-  python main.py --backfill-historical
-  python main.py --recover-missing
-  python main.py --generate-excel
- 
-To generate the Excel report through a specific date, use `--end-date`:
-
-  python main.py --generate-excel --end-date 2026-09-07
-
-The generated workbook is saved in the output/ folder.
+    python main.py --compute-rsi
 
 
-4. Start the Dashboard
-----------------------
-Keep the previous commands complete, then open a second PowerShell window.
-From the project root, run:
+STEP 7 — Generate Excel report
+--------------------------------
+  Generates an Excel workbook (last 70 trading days + RSI ranking):
 
-  cd D:\Nifty-200_Stock_RSI_Index
-  streamlit run frontend/streamlit_app.py
+    python main.py --generate-excel
 
-Open the displayed local URL, normally:
+  With a custom end date:
 
-  http://localhost:8501
+    python main.py --generate-excel --end-date 2026-09-23
 
-
-5. Dashboard Refresh
---------------------
-Use the sun/moon icon in the sidebar to switch between light and dark themes.
-Use 'Refresh dashboard data' to clear cached reads and reload local files.
-This button does not start NSE ingestion.
+  Report is saved to the output/ folder.
 
 
-Optional Backend Check
-----------------------
+STEP 8 — Start the Streamlit Dashboard
+----------------------------------------
+  Open a second PowerShell window, then run:
 
-  python -m compileall app frontend main.py
+    cd D:\Nifty-200_Stock_RSI_Index
+    streamlit run frontend/streamlit_app.py
+
+  Open in browser:
+
+    http://localhost:8501
+
+
+======================================================================
+  DAILY USAGE  (after the first-time setup is complete)
+======================================================================
+
+Option A — Automatic refresh via the Dashboard  ★ RECOMMENDED ★
+-----------------------------------------------------------------
+  1. Start the Streamlit dashboard (if not already running):
+
+       streamlit run frontend/streamlit_app.py
+
+  2. Open http://localhost:8501 in your browser.
+
+  3. Click the "🔄 Refresh & Update Data" button in the sidebar.
+
+     This button will automatically:
+       - Detect missing trading days since the last data in MongoDB.
+       - Fetch NSE Bhavcopy for each missing day from NSE.
+       - Bulk upsert new price records into MongoDB.
+       - Recompute RSI 22 / 44 / 66 / Average RSI for all active stocks.
+       - Clear all cached data and reload the dashboard with fresh metrics.
+
+     The sidebar shows "Latest data date" — after refresh, this updates
+     to the most recent available trading day.
+
+
+Option B — Manual pipeline via CLI
+------------------------------------
+  Run from the project root:
+
+    python main.py --backfill-historical
+    python main.py --compute-rsi
+
+  Then reload the dashboard browser tab.
+
+
+======================================================================
+  MIGRATION (from existing CSV/JSON data files)
+======================================================================
+
+  If you have data already in data/stocks.json, data/prices.csv,
+  or data/rsi.csv, migrate it to MongoDB in one command:
+
+    python scripts/migrate_to_mongodb.py
+
+
+======================================================================
+  USEFUL SCRIPTS
+======================================================================
+
+  Verify DB state and record counts:
+    python scripts/test_mongodb.py
+
+  Verify Python syntax across all modules:
+    python -m compileall app frontend scripts main.py
+
+  Backfill + RSI + Excel in one sequence:
+    python main.py --backfill-historical && python main.py --compute-rsi && python main.py --generate-excel
+
+
+======================================================================
+  DASHBOARD FEATURES
+======================================================================
+
+  Dashboard    — Live KPIs, Top 10 / Bottom 10 stocks by Average RSI.
+  RSI Ranking  — Filterable and sortable full ranking table.
+  Stock Analysis — Historical price chart and RSI trend chart per stock.
+  Reports      — Generate and download Excel workbooks directly in browser.
+  Sidebar      — "Refresh & Update Data" auto-fetches missing days from NSE.
+                  Theme toggle (light / dark mode).
 
 ======================================================================

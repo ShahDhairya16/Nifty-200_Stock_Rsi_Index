@@ -15,7 +15,7 @@ def ranking_table(frame, limit=None):
                                 "average_rsi": "Average RSI"})
     if "Latest Date" in view:
         view["Latest Date"] = view["Latest Date"].map(format_date)
-    st.dataframe(view, hide_index=True, use_container_width=True,
+    st.dataframe(view, hide_index=True, width='stretch',
                  column_config={column: st.column_config.NumberColumn(format="%.2f")
                                 for column in ["RSI 22", "RSI 44", "RSI 66", "Average RSI"]
                                 if column in view})

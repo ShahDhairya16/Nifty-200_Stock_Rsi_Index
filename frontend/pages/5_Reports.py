@@ -1,4 +1,3 @@
-from pathlib import Path
 from datetime import date
 import streamlit as st
 from frontend.components.sidebar import render_sidebar
@@ -20,17 +19,17 @@ if st.button("Generate Excel Report", type="primary"):
         with st.spinner("Generating latest Excel report..."):
             result = ExcelReportService.generate_nifty200_excel_report(
                 refresh_market_data=False,
-                end_date=report_date
+                end_date=report_date,
+                in_memory=True,
             )
         st.session_state["latest_report"] = result
         st.success(f"Report generated for {result['latest_trade_date']}.")
     except Exception:
-        st.error("Excel report generation failed. Please verify that the database service is running and data is available.")
+        st.error("Excel report generation failed. Check the MongoDB settings and confirm that market data is available.")
 
 result = st.session_state.get("latest_report")
-if result and Path(result["file_path"]).exists():
-    report_path = Path(result["file_path"])
-    st.download_button("Download Excel Report", data=report_path.read_bytes(),
+if result and result.get("data"):
+    st.download_button("Download Excel Report", data=result["data"],
                        file_name=result["filename"],
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     st.caption(f"{result['trading_days']} trading days | {result['stocks']} stocks")

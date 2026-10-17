@@ -1,51 +1,79 @@
 import pandas as pd
 import streamlit as st
 
-from app.file_store import FileStore
+from app.database.repositories import StockRepository, PriceRepository, RSIRepository
 
 
 @st.cache_data(ttl=300, show_spinner=False)
 def get_stock_list():
-    return [{"id": index, "symbol": stock["symbol"], "company_name": stock.get("company_name") or stock["symbol"], "active": stock.get("active", True)}
-            for index, stock in enumerate(FileStore.load_stocks(), 1)]
+    stocks = StockRepository.get_all_stocks()
+    return [
+        {
+            "id": index,
+            "symbol": stock["symbol"],
+            "company_name": stock.get("company_name") or stock["symbol"],
+            "active": stock.get("active", True),
+        }
+        for index, stock in enumerate(stocks, 1)
+    ]
 
 
 @st.cache_data(ttl=300, show_spinner=False)
 def get_rsi_ranking():
-    stocks = {stock["symbol"]: stock for stock in FileStore.active_stocks()}
-    rsi = FileStore.load_rsi()
-    if rsi.empty:
-        return pd.DataFrame()
-    latest = rsi.sort_values("trade_date").groupby("symbol", as_index=False).tail(1)
-    latest["company_name"] = latest["symbol"].map(lambda symbol: stocks.get(symbol, {}).get("company_name") or symbol)
-    return latest.sort_values("average_rsi", ascending=False).reset_index(drop=True)
+    return RSIRepository.get_latest_rsi_rankings()
 
 
 @st.cache_data(ttl=300, show_spinner=False)
 def get_dashboard_summary():
     ranking = get_rsi_ranking()
-    return {"active_stocks": len(FileStore.active_stocks()), "latest_date": FileStore.latest_price_date(),
-            "highest_rsi": ranking["average_rsi"].max() if not ranking.empty else None,
-            "lowest_rsi": ranking["average_rsi"].min() if not ranking.empty else None,
-            "market_average": ranking["average_rsi"].mean() if not ranking.empty else None}
+    active_count = StockRepository.count_stocks(active_only=True)
+    latest_date = PriceRepository.latest_price_date()
+
+    return {
+        "active_stocks": active_count,
+        "latest_date": latest_date,
+        "highest_rsi": ranking["average_rsi"].max() if not ranking.empty else None,
+        "lowest_rsi": ranking["average_rsi"].min() if not ranking.empty else None,
+        "market_average": ranking["average_rsi"].mean() if not ranking.empty else None,
+    }
 
 
 @st.cache_data(ttl=300, show_spinner=False)
 def get_stock_history(stock_id):
-    stocks = FileStore.load_stocks()
-    symbol = stocks[stock_id - 1]["symbol"]
-    prices = FileStore.load_prices()
-    rsi = FileStore.load_rsi()
-    history = prices[prices["symbol"] == symbol].merge(rsi, on=["symbol", "trade_date"], how="left")
+    stocks = StockRepository.get_all_stocks()
+    if isinstance(stock_id, int) and 1 <= stock_id <= len(stocks):
+        symbol = stocks[stock_id - 1]["symbol"]
+    else:
+        symbol = str(stock_id).strip().upper()
+
+    prices = PriceRepository.get_prices_for_symbol(symbol)
+    rsi = RSIRepository.get_rsi_for_symbol(symbol)
+
+    if prices.empty:
+        return pd.DataFrame()
+
+    history = prices.merge(rsi, on=["symbol", "trade_date"], how="left")
     return history.drop(columns=["symbol"])
 
 
 @st.cache_data(ttl=300, show_spinner=False)
 def get_data_status():
-    prices = FileStore.load_prices()
-    rsi = FileStore.load_rsi()
-    coverage = prices.groupby("symbol").agg(price_count=("trade_date", "count"), earliest_date=("trade_date", "min"), latest_date=("trade_date", "max")).reset_index() if not prices.empty else pd.DataFrame()
-    return {"coverage": coverage, "active_stocks": len(FileStore.active_stocks()), "inactive_stocks": len(FileStore.load_stocks()) - len(FileStore.active_stocks()), "total_prices": len(prices), "total_rsi": len(rsi), "jobs": [], "errors": []}
+    coverage = PriceRepository.get_price_coverage()
+    active_stocks = StockRepository.count_stocks(active_only=True)
+    total_stocks = StockRepository.count_stocks()
+    inactive_stocks = total_stocks - active_stocks
+    total_prices = PriceRepository.count_prices()
+    total_rsi = RSIRepository.count_rsi()
+
+    return {
+        "coverage": coverage,
+        "active_stocks": active_stocks,
+        "inactive_stocks": inactive_stocks,
+        "total_prices": total_prices,
+        "total_rsi": total_rsi,
+        "jobs": [],
+        "errors": [],
+    }
 
 
 def refresh_data():

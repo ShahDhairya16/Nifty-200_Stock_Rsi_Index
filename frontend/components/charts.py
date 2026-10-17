@@ -25,14 +25,14 @@ def rsi_distribution(frame):
                                (50, 70, "#e7f2ea"), (70, 100, "#f7e6e3")]:
         figure.add_vrect(x0=start, x1=end, fillcolor=color, opacity=0.35, line_width=0)
     chart_layout(figure, 360).update_layout(showlegend=False)
-    st.plotly_chart(figure, use_container_width=True)
+    st.plotly_chart(figure, width='stretch')
 
 
 def price_chart(history):
     price = px.line(history, x="trade_date", y="close_price", labels={
         "trade_date": "Trade Date", "close_price": "Closing Price"})
     chart_layout(price, 360)
-    st.plotly_chart(price, use_container_width=True)
+    st.plotly_chart(price, width='stretch')
 
 
 def rsi_chart(history):
@@ -47,4 +47,4 @@ def rsi_chart(history):
         figure.add_hline(y=level, line_dash="dot", line_color="#9aa4b2")
     chart_layout(figure, 400).update_layout(yaxis=dict(range=[0, 100], title="RSI Value"),
                                             xaxis_title="Trade Date")
-    st.plotly_chart(figure, use_container_width=True)
+    st.plotly_chart(figure, width='stretch')
