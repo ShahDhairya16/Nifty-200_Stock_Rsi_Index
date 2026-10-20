@@ -82,6 +82,7 @@ class StockUniverseService:
             logger.error(f"Failed to load bundled NIFTY 200 constituents from {stock_file}: {exc}")
             return summary
 
+        expected_symbols = set(fetched)
         existing = {stock["symbol"].strip().upper(): stock for stock in StockRepository.get_all_stocks()}
         today = date.today().isoformat()
         for symbol, stock in fetched.items():
@@ -101,4 +102,17 @@ class StockUniverseService:
 
         StockRepository.bulk_upsert_stocks(sorted(fetched.values(), key=lambda item: item["symbol"]))
         summary["total_fetched"] = len(rows)
+
+        active_symbols = {
+            stock["symbol"].strip().upper()
+            for stock in StockRepository.get_active_stocks()
+            if stock.get("symbol")
+        }
+        if active_symbols != expected_symbols:
+            missing = sorted(expected_symbols - active_symbols)
+            unexpected = sorted(active_symbols - expected_symbols)
+            summary["errors"].append(
+                "MongoDB active stock universe does not match data/stocks.json. "
+                f"Missing={missing}; unexpected={unexpected}."
+            )
         return summary

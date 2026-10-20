@@ -12,7 +12,10 @@ from app.services.excel_report_service import ExcelReportService
 
 render_sidebar()
 st.title("Reports")
-st.caption("Generate the backend-produced workbook containing the last 70 trading days and RSI ranking.")
+st.caption(
+    "Generate the last 70 trading days and RSI ranking. "
+    "Both sheets use the pinned NIFTY 200 constituent list from 15-Oct-2026."
+)
 
 report_date = st.date_input(
     "Report end date",
