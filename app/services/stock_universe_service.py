@@ -46,10 +46,7 @@ class StockUniverseService:
         StockRepository.bulk_upsert_stocks(sorted(fetched.values(), key=lambda item: item["symbol"]))
         summary["total_fetched"] = len(constituents)
 
-        # Hard-delete deactivated stocks and their associated price/RSI data
-        purge = StockRepository.delete_deactivated_stocks()
-        summary["purged_stocks"] = purge["stocks_deleted"]
-        summary["purged_prices"] = purge["prices_deleted"]
-        summary["purged_rsi"] = purge["rsi_deleted"]
-
+        # Keep historical stock, price, and RSI records for analysis. Reports
+        # and current dashboards filter on active=True, so deactivated
+        # constituents disappear from current rankings without losing history.
         return summary
