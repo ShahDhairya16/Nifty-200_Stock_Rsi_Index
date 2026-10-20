@@ -1,3 +1,10 @@
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 import streamlit as st
 from frontend.components.charts import price_chart, rsi_chart
 from frontend.components.metrics import metric_row
@@ -43,8 +50,8 @@ try:
         table = history.sort_values("trade_date", ascending=False).copy()
         table["trade_date"] = table["trade_date"].map(format_date)
         st.dataframe(table.rename(columns={"trade_date": "Date", "open_price": "Open", "high_price": "High",
-                                           "low_price": "Low", "close_price": "Close", "volume": "Volume",
-                                           "rsi_22": "RSI 22", "rsi_44": "RSI 44", "rsi_66": "RSI 66",
-                                           "average_rsi": "Average RSI"}), hide_index=True, width='stretch')
+                                            "low_price": "Low", "close_price": "Close", "volume": "Volume",
+                                            "rsi_22": "RSI 22", "rsi_44": "RSI 44", "rsi_66": "RSI 66",
+                                            "average_rsi": "Average RSI"}), hide_index=True, width='stretch')
 except Exception:
-    st.error("Unable to load stock analysis. Please verify that the database service is running.")
+    st.error("Unable to load stock analysis. Check the MongoDB settings in Streamlit Secrets or your local .env, then try again.")

@@ -1,3 +1,10 @@
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 import streamlit as st
 from frontend.components.sidebar import render_sidebar
 from frontend.utils.data_loader import get_rsi_ranking
@@ -41,4 +48,4 @@ try:
                  column_config={name: st.column_config.NumberColumn(format="%.2f")
                                 for name in ["RSI 22", "RSI 44", "RSI 66", "Average RSI"]})
 except Exception:
-    st.error("Unable to load the RSI ranking. Please verify that the database service is running.")
+    st.error("Unable to load the RSI ranking. Check the MongoDB settings in Streamlit Secrets or your local .env, then try again.")

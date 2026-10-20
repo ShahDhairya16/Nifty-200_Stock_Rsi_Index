@@ -64,20 +64,21 @@
     "added_date": "2026-09-08"
   },
   {
-    "symbol": "ALKEM",
-    "company_name": "Alkem Laboratories Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
     "symbol": "AMBUJACEM",
     "company_name": "Ambuja Cements Ltd.",
     "exchange": "NSE",
     "series": "EQ",
+    "active": false,
+    "added_date": "2026-09-08",
+    "removed_date": "2026-10-17"
+  },
+  {
+    "symbol": "APARINDS",
+    "company_name": "Apar Industries Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
     "active": true,
-    "added_date": "2026-09-08"
+    "added_date": "2026-10-17"
   },
   {
     "symbol": "APLAPOLLO",
@@ -360,14 +361,6 @@
     "added_date": "2026-09-08"
   },
   {
-    "symbol": "COROMANDEL",
-    "company_name": "Coromandel International Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
     "symbol": "CUMMINSIND",
     "company_name": "Cummins India Ltd.",
     "exchange": "NSE",
@@ -608,6 +601,14 @@
     "added_date": "2026-09-08"
   },
   {
+    "symbol": "HINDCOPPER",
+    "company_name": "Hindustan Copper Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-10-17"
+  },
+  {
     "symbol": "HINDPETRO",
     "company_name": "Hindustan Petroleum Corporation Ltd.",
     "exchange": "NSE",
@@ -626,14 +627,6 @@
   {
     "symbol": "HINDZINC",
     "company_name": "Hindustan Zinc Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
-    "symbol": "HUDCO",
-    "company_name": "Housing & Urban Development Corporation Ltd.",
     "exchange": "NSE",
     "series": "EQ",
     "active": true,
@@ -840,14 +833,6 @@
     "added_date": "2026-09-08"
   },
   {
-    "symbol": "KPITTECH",
-    "company_name": "KPIT Technologies Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
     "symbol": "LAURUSLABS",
     "company_name": "Laurus Labs Ltd.",
     "exchange": "NSE",
@@ -878,6 +863,14 @@
     "series": "EQ",
     "active": true,
     "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "LICI",
+    "company_name": "Life Insurance Corporation of India",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-10-17"
   },
   {
     "symbol": "LODHA",
@@ -936,6 +929,14 @@
     "added_date": "2026-09-08"
   },
   {
+    "symbol": "MAHABANK",
+    "company_name": "Bank of Maharashtra",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-10-17"
+  },
+  {
     "symbol": "MANKIND",
     "company_name": "Mankind Pharma Ltd.",
     "exchange": "NSE",
@@ -982,6 +983,14 @@
     "series": "EQ",
     "active": true,
     "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "MEESHO",
+    "company_name": "Meesho Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-10-17"
   },
   {
     "symbol": "MFSL",
@@ -1062,6 +1071,14 @@
     "series": "EQ",
     "active": true,
     "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "NLCINDIA",
+    "company_name": "NLC India Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-10-17"
   },
   {
     "symbol": "NMDC",
@@ -1304,14 +1321,6 @@
     "added_date": "2026-09-08"
   },
   {
-    "symbol": "SHREECEM",
-    "company_name": "Shree Cement Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
     "symbol": "SHRIRAMFIN",
     "company_name": "Shriram Finance Ltd.",
     "exchange": "NSE",
@@ -1394,22 +1403,6 @@
   {
     "symbol": "TATACONSUM",
     "company_name": "Tata Consumer Products Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
-    "symbol": "TATAELXSI",
-    "company_name": "Tata Elxsi Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
-    "symbol": "TATAINVEST",
-    "company_name": "Tata Investment Corporation Ltd.",
     "exchange": "NSE",
     "series": "EQ",
     "active": true,
@@ -1534,6 +1527,14 @@
     "series": "EQ",
     "active": true,
     "added_date": "2026-09-08"
+  },
+  {
+    "symbol": "VAML",
+    "company_name": "Vedanta Aluminium Metal Ltd.",
+    "exchange": "NSE",
+    "series": "EQ",
+    "active": true,
+    "added_date": "2026-10-17"
   },
   {
     "symbol": "VBL",
