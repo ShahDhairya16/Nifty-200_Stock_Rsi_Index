@@ -45,4 +45,11 @@ class StockUniverseService:
 
         StockRepository.bulk_upsert_stocks(sorted(fetched.values(), key=lambda item: item["symbol"]))
         summary["total_fetched"] = len(constituents)
+
+        # Hard-delete deactivated stocks and their associated price/RSI data
+        if summary["deactivated_stocks"] > 0:
+            purge = StockRepository.delete_deactivated_stocks()
+            summary["purged_prices"] = purge["prices_deleted"]
+            summary["purged_rsi"] = purge["rsi_deleted"]
+
         return summary

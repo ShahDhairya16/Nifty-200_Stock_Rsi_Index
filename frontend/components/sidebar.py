@@ -2,6 +2,30 @@ import streamlit as st
 from frontend.utils.data_loader import get_dashboard_summary, refresh_data
 from frontend.utils.formatters import format_date
 from frontend.components.theme import apply_theme
+from app.database.repositories import StockRepository
+
+
+def _load_bundled_data():
+    """Import the repository's checked-in seed files into a fresh Atlas database."""
+    import json
+    from pathlib import Path
+    import pandas as pd
+
+    from app.database.init_db import init_database
+    from app.database.repositories import PriceRepository, RSIRepository
+
+    root = Path(__file__).resolve().parents[2]
+    data_dir = root / "data"
+    if not init_database():
+        raise RuntimeError("Database initialization failed")
+
+    stocks = json.loads((data_dir / "stocks.json").read_text(encoding="utf-8"))
+    prices = pd.read_csv(data_dir / "prices.csv")
+    rsi = pd.read_csv(data_dir / "rsi.csv")
+    stock_count = StockRepository.bulk_upsert_stocks(stocks)
+    price_count = PriceRepository.bulk_upsert_prices(prices)
+    rsi_count = RSIRepository.bulk_upsert_rsi(rsi)
+    return stock_count, price_count, rsi_count
 
 
 def render_sidebar():
@@ -10,6 +34,21 @@ def render_sidebar():
         st.markdown("## NIFTY 200")
         st.caption("RSI analytics workspace")
         st.divider()
+
+        try:
+            if StockRepository.count_stocks() == 0:
+                st.info("This database is empty. Load the bundled project data to initialize the dashboard.")
+                if st.button("Initialize dashboard data", width="stretch"):
+                    try:
+                        with st.spinner("Importing bundled stock, price, and RSI data into MongoDB…"):
+                            stocks, prices, rsi = _load_bundled_data()
+                        st.success(f"Imported {stocks:,} stocks, {prices:,} prices, and {rsi:,} RSI records.")
+                        refresh_data()
+                        st.rerun()
+                    except Exception:
+                        st.error("Unable to import the bundled data. Check Atlas access and the application logs.")
+        except Exception:
+            pass
 
         if st.button("🔄 Refresh & Update Data", width='stretch', type="primary"):
             with st.spinner("Checking for missing data…"):
