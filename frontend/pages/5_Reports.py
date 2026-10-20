@@ -1,3 +1,4 @@
+import hashlib
 import sys
 from pathlib import Path
 
@@ -10,12 +11,30 @@ import streamlit as st
 from frontend.components.sidebar import render_sidebar
 from app.services.excel_report_service import ExcelReportService
 
+STOCK_LIST_PATH = ROOT / "data" / "stocks.json"
+REPORT_SOURCE_SIGNATURE = hashlib.sha256(
+    b"pinned-nifty200-report-v2:" + STOCK_LIST_PATH.read_bytes()
+).hexdigest()
+
 render_sidebar()
 st.title("Reports")
 st.caption(
     "Generate the last 70 trading days and RSI ranking. "
     "Both sheets use the pinned NIFTY 200 constituent list from 15-Oct-2026."
 )
+
+# Streamlit can preserve session_state across source updates. Discard reports
+# created before this report implementation or against a different universe.
+if (
+    st.session_state.get("latest_report")
+    and st.session_state.get("latest_report_source_signature") != REPORT_SOURCE_SIGNATURE
+):
+    st.session_state.pop("latest_report", None)
+    st.session_state.pop("latest_report_source_signature", None)
+    st.info(
+        "A previous report used an older stock list and was cleared. "
+        "Generate a fresh report to download the corrected workbook."
+    )
 
 report_date = st.date_input(
     "Report end date",
@@ -33,6 +52,7 @@ if st.button("Generate Excel Report", type="primary"):
                 in_memory=True,
             )
         st.session_state["latest_report"] = result
+        st.session_state["latest_report_source_signature"] = REPORT_SOURCE_SIGNATURE
         st.success(f"Report generated for {result['latest_trade_date']}.")
     except Exception:
         st.error("Excel report generation failed. Check the MongoDB settings and confirm that market data is available.")
