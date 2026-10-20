@@ -76,6 +76,41 @@ class StockRepository:
         cls.bulk_upsert_stocks(stocks)
 
     @classmethod
+    def delete_deactivated_stocks(cls) -> Dict[str, int]:
+        """
+        Permanently deletes all stocks marked active=False from the stocks collection
+        and cascades the deletion to their price and RSI records.
+        Returns a dict with counts of deleted documents per collection.
+        """
+        db = get_database()
+        stocks_col = db["stocks"]
+        prices_col = db["prices"]
+        rsi_col = db["rsi"]
+
+        # Collect symbols to purge
+        inactive = list(stocks_col.find({"active": False}, {"_id": 0, "symbol": 1}))
+        symbols = [s["symbol"] for s in inactive]
+
+        if not symbols:
+            logger.info("No deactivated stocks found to delete.")
+            return {"stocks_deleted": 0, "prices_deleted": 0, "rsi_deleted": 0}
+
+        prices_result = prices_col.delete_many({"symbol": {"$in": symbols}})
+        rsi_result = rsi_col.delete_many({"symbol": {"$in": symbols}})
+        stocks_result = stocks_col.delete_many({"symbol": {"$in": symbols}})
+
+        counts = {
+            "stocks_deleted": stocks_result.deleted_count,
+            "prices_deleted": prices_result.deleted_count,
+            "rsi_deleted": rsi_result.deleted_count,
+        }
+        logger.info(
+            f"Purged {counts['stocks_deleted']} deactivated stocks "
+            f"({counts['prices_deleted']} price records, {counts['rsi_deleted']} RSI records) from MongoDB."
+        )
+        return counts
+
+    @classmethod
     def count_stocks(cls, active_only: bool = False) -> int:
         col = cls.get_collection()
         filter_query = {"active": True} if active_only else {}

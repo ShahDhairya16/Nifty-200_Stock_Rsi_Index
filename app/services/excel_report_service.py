@@ -24,19 +24,31 @@ class ExcelReportService:
         in_memory: bool = False,
     ) -> Dict[str, Any]:
         report_end = parse_date(end_date) if end_date is not None else date.today()
+
+        # Load active stocks first — all data must be scoped to these symbols only
+        stocks = StockRepository.get_active_stocks()
+        if not stocks:
+            raise ValueError("No active stocks found. Run --sync-universe first.")
+        active_symbols = sorted(stock["symbol"] for stock in stocks)
+        names = {stock["symbol"]: stock.get("company_name") or stock["symbol"] for stock in stocks}
+
         prices = PriceRepository.load_prices(end_date=report_end)
         if prices.empty:
             raise ValueError("No market data found in MongoDB. Run --sync-universe and --backfill-historical first.")
 
+        # Restrict to active symbols only — drop any deactivated stock data
+        prices = prices[prices["symbol"].isin(active_symbols)]
+
         dates = sorted(prices["trade_date"].unique())[-70:]
         prices = prices[prices["trade_date"].isin(dates)]
-        stocks = StockRepository.get_active_stocks()
-        symbols = sorted(stock["symbol"] for stock in stocks)
+        symbols = [s for s in active_symbols if s in prices["symbol"].unique()]
         matrix = prices.pivot_table(index="trade_date", columns="symbol", values="close_price").reindex(columns=symbols).reset_index()
 
         rsi = RSIRepository.load_rsi(end_date=report_end)
+        # Restrict RSI to active symbols only
+        rsi = rsi[rsi["symbol"].isin(active_symbols)]
         latest = rsi.sort_values("trade_date").groupby("symbol", as_index=False).tail(1)
-        names = {stock["symbol"]: stock.get("company_name") or stock["symbol"] for stock in stocks}
+
         ranking = latest.assign(company_name=latest["symbol"].map(names)).sort_values("average_rsi", ascending=False)
         ranking.insert(0, "Rank", range(1, len(ranking) + 1))
         ranking = ranking.rename(columns={"trade_date": "Latest Date"})[
