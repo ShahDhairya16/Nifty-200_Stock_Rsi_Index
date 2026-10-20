@@ -85,9 +85,16 @@ class DataUpdateService:
 
         logger.info(f"DataUpdateService: Found {len(missing_days)} missing day(s) to fetch: {missing_days}")
 
+        # Ensure active universe is up to date with official NIFTY 200 constituents
+        try:
+            from app.services.stock_universe_service import StockUniverseService
+            StockUniverseService.sync_nifty200_universe()
+        except Exception as exc:
+            logger.warning(f"DataUpdateService: Stock universe sync skipped/failed ({exc}). Using stored active stocks.")
+
         # Load active symbols once
         active_stocks = StockRepository.get_active_stocks()
-        active_symbols = {stock["symbol"] for stock in active_stocks}
+        active_symbols = {stock["symbol"].strip().upper() for stock in active_stocks if stock.get("symbol")}
 
         for index, trade_date in enumerate(missing_days, 1):
             date_str = format_date_iso(trade_date)
