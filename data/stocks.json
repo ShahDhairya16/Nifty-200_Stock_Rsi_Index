@@ -81,14 +81,6 @@
     "added_date": "2026-10-17"
   },
   {
-    "symbol": "APARINDS",
-    "company_name": "Apar Industries Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-10-17"
-  },
-  {
     "symbol": "APLAPOLLO",
     "company_name": "APL Apollo Tubes Ltd.",
     "exchange": "NSE",
@@ -369,14 +361,6 @@
     "added_date": "2026-09-08"
   },
   {
-    "symbol": "COROMANDEL",
-    "company_name": "Coromandel International Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
     "symbol": "CUMMINSIND",
     "company_name": "Cummins India Ltd.",
     "exchange": "NSE",
@@ -649,14 +633,6 @@
     "added_date": "2026-09-08"
   },
   {
-    "symbol": "HUDCO",
-    "company_name": "Housing & Urban Development Corporation Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
     "symbol": "HYUNDAI",
     "company_name": "Hyundai Motor India Ltd.",
     "exchange": "NSE",
@@ -851,14 +827,6 @@
   {
     "symbol": "KOTAKBANK",
     "company_name": "Kotak Mahindra Bank Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
-    "symbol": "KPITTECH",
-    "company_name": "KPIT Technologies Ltd.",
     "exchange": "NSE",
     "series": "EQ",
     "active": true,
@@ -1353,14 +1321,6 @@
     "added_date": "2026-09-08"
   },
   {
-    "symbol": "SHREECEM",
-    "company_name": "Shree Cement Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
     "symbol": "SHRIRAMFIN",
     "company_name": "Shriram Finance Ltd.",
     "exchange": "NSE",
@@ -1443,22 +1403,6 @@
   {
     "symbol": "TATACONSUM",
     "company_name": "Tata Consumer Products Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
-    "symbol": "TATAELXSI",
-    "company_name": "Tata Elxsi Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-09-08"
-  },
-  {
-    "symbol": "TATAINVEST",
-    "company_name": "Tata Investment Corporation Ltd.",
     "exchange": "NSE",
     "series": "EQ",
     "active": true,
