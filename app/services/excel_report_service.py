@@ -31,16 +31,15 @@ class ExcelReportService:
         report_end = parse_date(end_date) if end_date is not None else date.today()
 
         # ------------------------------------------------------------------
-        # 1. Synchronize the current NIFTY 200 universe.
+        # 1. Synchronize the pinned NIFTY 200 snapshot supplied with the repo.
         #
-        # The stock-universe collection is the single source of truth for
-        # which constituents are currently active.
+        # The Excel export intentionally uses data/stocks.json so it matches
+        # the user's supplied constituent list instead of a changing live feed.
         #
         # We intentionally synchronize the universe before reading active
-        # stocks so that newly added/deactivated constituents are reflected
-        # in the report immediately.
+        # stocks so additions and removals in the pinned snapshot are reflected.
         # ------------------------------------------------------------------
-        universe_summary = StockUniverseService.sync_nifty200_universe()
+        universe_summary = StockUniverseService.sync_bundled_nifty200_universe()
 
         if universe_summary.get("errors"):
             error_message = (
@@ -51,7 +50,7 @@ class ExcelReportService:
             raise RuntimeError(error_message)
 
         logger.info(
-            "NIFTY 200 universe synchronized successfully. "
+            "Pinned NIFTY 200 universe synchronized successfully from data/stocks.json. "
             f"Fetched={universe_summary.get('total_fetched', 0)}, "
             f"New={universe_summary.get('new_stocks', 0)}, "
             f"Updated={universe_summary.get('updated_stocks', 0)}, "
