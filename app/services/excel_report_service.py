@@ -8,6 +8,8 @@ import pandas as pd
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from app.database.repositories import StockRepository, PriceRepository, RSIRepository
+from app.services.historical_data_service import HistoricalDataService
+from app.services.rsi_service import RSIService
 from app.services.stock_universe_service import StockUniverseService
 from app.utils.date_utils import format_date_iso, parse_date
 from app.utils.logger import logger
@@ -56,6 +58,29 @@ class ExcelReportService:
             f"Updated={universe_summary.get('updated_stocks', 0)}, "
             f"Deactivated={universe_summary.get('deactivated_stocks', 0)}"
         )
+
+        # ------------------------------------------------------------------
+        # 1b. Guarantee that every active constituent has enough closing
+        #     prices for RSI 22/44/66. This handles stocks that were added to
+        #     the pinned snapshot after the original historical load and only
+        #     have a couple of Bhavcopy rows in storage.
+        # ------------------------------------------------------------------
+        try:
+            history_summary = HistoricalDataService.ensure_minimum_history(
+                end_date=report_end
+            )
+            backfill_summary = history_summary.get("backfill") or {}
+            if backfill_summary.get("total_records_processed", 0) > 0:
+                RSIService.compute_all_active_stocks_rsi()
+            for item in backfill_summary.get("errors", []):
+                logger.warning(
+                    "NIFTY 200 Excel report history backfill failed for "
+                    f"{item.get('symbol')}: {item.get('error')}"
+                )
+        except Exception as exc:
+            logger.warning(
+                f"NIFTY 200 Excel report history backfill skipped/failed: {exc}"
+            )
 
         # ------------------------------------------------------------------
         # 2. Load the current active NIFTY 200 universe.

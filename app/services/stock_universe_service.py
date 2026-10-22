@@ -71,7 +71,15 @@ class StockUniverseService:
         Excel exports use this snapshot so their stock list matches the list
         supplied with the project, regardless of changes to the live NSE page.
         """
-        summary = {"total_fetched": 0, "new_stocks": 0, "updated_stocks": 0, "deactivated_stocks": 0, "errors": []}
+        summary = {
+            "total_fetched": 0,
+            "new_stocks": 0,
+            "new_symbols": [],
+            "updated_stocks": 0,
+            "deactivated_stocks": 0,
+            "deactivated_symbols": [],
+            "errors": [],
+        }
         stock_file = Path(__file__).resolve().parents[2] / "data" / "stocks.json"
         try:
             with stock_file.open("r", encoding="utf-8") as handle:
@@ -103,6 +111,7 @@ class StockUniverseService:
             else:
                 stock["added_date"] = today
                 summary["new_stocks"] += 1
+                summary["new_symbols"].append(symbol)
 
         for symbol, stock in existing.items():
             if symbol not in fetched:
@@ -110,6 +119,7 @@ class StockUniverseService:
                 stock["removed_date"] = today
                 fetched[symbol] = stock
                 summary["deactivated_stocks"] += 1
+                summary["deactivated_symbols"].append(symbol)
 
         StockRepository.bulk_upsert_stocks(sorted(fetched.values(), key=lambda item: item["symbol"]))
         summary["total_fetched"] = len(rows)

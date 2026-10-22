@@ -235,6 +235,7 @@ class UniverseUpdateService:
                 errors.append(message)
 
         backfill_summary = None
+        history_summary = None
         rsi_recomputed = False
         if added and backfill_new:
             logger.info(f"UniverseUpdateService: Backfilling newly added stocks: {added}")
@@ -245,13 +246,39 @@ class UniverseUpdateService:
                         f"{item.get('symbol')}: {item.get('error')}"
                         for item in backfill_summary["errors"]
                     )
-                if recompute_rsi and backfill_summary.get("total_records_processed", 0) > 0:
-                    RSIService.compute_all_active_stocks_rsi()
-                    rsi_recomputed = True
             except Exception as exc:
                 message = f"Failed to backfill newly added stocks: {exc}"
                 logger.error(f"UniverseUpdateService: {message}")
                 errors.append(message)
+
+        if backfill_new:
+            # Newly added constituents may already be marked active in MongoDB
+            # without a full history (for example when they came from the
+            # bundled data/stocks.json snapshot). Top up every active stock so
+            # each one has enough closing prices for RSI 22/44/66.
+            try:
+                history_summary = HistoricalDataService.ensure_minimum_history()
+                if history_summary.get("symbols_with_insufficient_history"):
+                    logger.info(
+                        "UniverseUpdateService: Backfilled minimum history for "
+                        f"{history_summary['symbols_with_insufficient_history']} stock(s)."
+                    )
+                backfill = history_summary.get("backfill") or {}
+                for item in backfill.get("errors", []):
+                    errors.append(f"{item.get('symbol')}: {item.get('error')}")
+            except Exception as exc:
+                message = f"Failed to ensure minimum price history: {exc}"
+                logger.error(f"UniverseUpdateService: {message}")
+                errors.append(message)
+
+        if recompute_rsi:
+            added_records = (backfill_summary or {}).get("total_records_processed", 0)
+            history_records = ((history_summary or {}).get("backfill") or {}).get(
+                "total_records_processed", 0
+            )
+            if added_records or history_records:
+                RSIService.compute_all_active_stocks_rsi()
+                rsi_recomputed = True
 
         status = "UPDATED" if (changed or snapshot_updated) and not errors else (
             "PARTIAL" if (changed or snapshot_updated) else "UP_TO_DATE"
@@ -274,6 +301,7 @@ class UniverseUpdateService:
             "snapshot_updated_at": now if snapshot_updated else metadata.get("snapshot_updated_at"),
             "universe_summary": universe_summary,
             "backfill_summary": backfill_summary,
+            "history_summary": history_summary,
             "rsi_recomputed": rsi_recomputed,
         }
         SyncMetadataRepository.save(cls.METADATA_KEY, document)

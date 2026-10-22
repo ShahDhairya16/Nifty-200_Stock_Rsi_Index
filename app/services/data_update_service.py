@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Callable
 
 from app.database.repositories import StockRepository, PriceRepository, RSIRepository
 from app.services.data_normalizer import DataNormalizer
+from app.services.historical_data_service import HistoricalDataService
 from app.services.nse_client import NSEClient
 from app.services.rsi_service import RSIService
 from app.utils.date_utils import format_date_iso, parse_date, is_weekend
@@ -51,6 +52,7 @@ class DataUpdateService:
             "days_with_data": 0,
             "days_skipped_holiday": 0,
             "total_records_upserted": 0,
+            "history_backfill": None,
             "rsi_recomputed": False,
             "universe": None,
             "errors": [],
@@ -84,11 +86,35 @@ class DataUpdateService:
                     "DataUpdateService: Universe sync reported: "
                     f"{summary['universe']['errors']}"
                 )
+            if summary["universe"].get("rsi_recomputed"):
+                summary["rsi_recomputed"] = True
         except Exception as exc:
             logger.warning(f"DataUpdateService: Stock universe sync skipped/failed ({exc}). Using stored active stocks.")
 
+        # Safety net for stocks that joined the universe after the original
+        # data load. They may only have the last couple of Bhavcopy rows, which
+        # makes RSI 22/44/66 impossible. Backfill at least 70 recent closes.
+        try:
+            summary["history_backfill"] = HistoricalDataService.ensure_minimum_history()
+            history_errors = (summary["history_backfill"].get("backfill") or {}).get("errors", [])
+            for item in history_errors:
+                message = f"{item.get('symbol')}: {item.get('error')}"
+                summary["errors"].append(message)
+                logger.warning(f"DataUpdateService: History backfill error — {message}")
+        except Exception as exc:
+            message = f"Failed to ensure minimum price history: {exc}"
+            summary["errors"].append(message)
+            logger.error(f"DataUpdateService: {message}")
+
+        history_records = (
+            (summary["history_backfill"] or {}).get("backfill") or {}
+        ).get("total_records_processed", 0)
+
         # If already up-to-date (or today is weekend / market closed today)
         if latest_date >= today:
+            if history_records > 0:
+                RSIService.compute_all_active_stocks_rsi()
+                summary["rsi_recomputed"] = True
             summary["status"] = "UP_TO_DATE"
             summary["latest_date_after"] = format_date_iso(latest_date)
             logger.info("DataUpdateService: Data is already up-to-date.")
@@ -144,7 +170,11 @@ class DataUpdateService:
                     progress_callback(index, len(missing_days), date_str)
 
         # Always recompute RSI after any new prices land
-        if summary["days_with_data"] > 0 or summary["total_records_upserted"] > 0:
+        if (
+            summary["days_with_data"] > 0
+            or summary["total_records_upserted"] > 0
+            or history_records > 0
+        ):
             try:
                 rsi_summary = RSIService.compute_all_active_stocks_rsi()
                 summary["rsi_recomputed"] = True
