@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -60,27 +60,38 @@ class ExcelReportService:
         )
 
         # ------------------------------------------------------------------
-        # 1b. Guarantee that every active constituent has enough closing
-        #     prices for RSI 22/44/66. This handles stocks that were added to
-        #     the pinned snapshot after the original historical load and only
-        #     have a couple of Bhavcopy rows in storage.
+        # 1b. Backfill only when necessary.
+        #
+        # Newly added constituents need their history fetched before the price
+        # matrix is built. Existing constituents are already covered by the
+        # sidebar refresh, so we do not run a full 200-stock coverage scan (and
+        # possible NSE requests) on every report generation.
         # ------------------------------------------------------------------
-        try:
-            history_summary = HistoricalDataService.ensure_minimum_history(
-                end_date=report_end
-            )
-            backfill_summary = history_summary.get("backfill") or {}
-            if backfill_summary.get("total_records_processed", 0) > 0:
-                RSIService.compute_all_active_stocks_rsi()
-            for item in backfill_summary.get("errors", []):
+        new_symbols = universe_summary.get("new_symbols") or []
+        if new_symbols or refresh_market_data:
+            try:
+                if refresh_market_data:
+                    history_summary = HistoricalDataService.ensure_minimum_history(
+                        end_date=report_end
+                    )
+                    backfill_summary = history_summary.get("backfill") or {}
+                else:
+                    backfill_summary = HistoricalDataService.backfill_historical_data(
+                        start_date=HistoricalDataService.history_start_date(report_end),
+                        end_date=report_end,
+                        symbols=new_symbols,
+                    )
+                if backfill_summary.get("total_records_processed", 0) > 0:
+                    RSIService.compute_all_active_stocks_rsi()
+                for item in backfill_summary.get("errors", []):
+                    logger.warning(
+                        "NIFTY 200 Excel report history backfill failed for "
+                        f"{item.get('symbol')}: {item.get('error')}"
+                    )
+            except Exception as exc:
                 logger.warning(
-                    "NIFTY 200 Excel report history backfill failed for "
-                    f"{item.get('symbol')}: {item.get('error')}"
+                    f"NIFTY 200 Excel report history backfill skipped/failed: {exc}"
                 )
-        except Exception as exc:
-            logger.warning(
-                f"NIFTY 200 Excel report history backfill skipped/failed: {exc}"
-            )
 
         # ------------------------------------------------------------------
         # 2. Load the current active NIFTY 200 universe.
@@ -120,7 +131,10 @@ class ExcelReportService:
         # Therefore, explicitly filter the price dataframe against the
         # current active universe before creating the price matrix.
         # ------------------------------------------------------------------
-        prices = PriceRepository.load_prices(end_date=report_end)
+        prices = PriceRepository.load_prices(
+            start_date=report_end - timedelta(days=200),
+            end_date=report_end,
+        )
 
         if prices.empty:
             raise ValueError(

@@ -165,16 +165,40 @@ class HistoricalDataService:
         start_date = cls.history_start_date(target_end, min_trading_days)
         latest_market_date = PriceRepository.latest_price_date()
 
+        # Load the coverage window once instead of issuing one MongoDB query per
+        # stock. This keeps refresh/report generation fast on remote databases.
+        prices = PriceRepository.load_prices(
+            start_date=start_date, end_date=target_end
+        )
+        if prices.empty:
+            coverage = {}
+        else:
+            coverage = {
+                row["symbol"]: (int(row["price_count"]), row["latest_date"])
+                for row in (
+                    prices.groupby("symbol", as_index=False)
+                    .agg(
+                        price_count=("trade_date", "nunique"),
+                        latest_date=("trade_date", "max"),
+                    )
+                    .to_dict(orient="records")
+                )
+            }
+
+        target_latest = latest_market_date or target_end
+        if target_end < target_latest:
+            target_latest = target_end
+            allowed_gap = timedelta(days=7)
+        else:
+            allowed_gap = timedelta(0)
+
         insufficient: List[str] = []
         for stock in stocks:
-            symbol = stock["symbol"]
-            if not cls._has_enough_history(
-                symbol,
-                start_date,
-                target_end,
-                min_trading_days,
-                latest_market_date=latest_market_date,
-            ):
+            symbol = str(stock.get("symbol", "")).strip().upper()
+            count, latest_existing = coverage.get(symbol, (0, None))
+            if count < min_trading_days or latest_existing is None:
+                insufficient.append(symbol)
+            elif latest_existing < target_latest - allowed_gap:
                 insufficient.append(symbol)
 
         summary = {
