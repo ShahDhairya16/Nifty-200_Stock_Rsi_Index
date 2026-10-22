@@ -13,21 +13,20 @@ class StockUniverseService:
     """Synchronize the NIFTY 200 universe into MongoDB storage."""
 
     @staticmethod
-    def sync_nifty200_universe(session: Optional[Any] = None) -> Dict[str, Any]:
-        summary = {"total_fetched": 0, "new_stocks": 0, "updated_stocks": 0, "deactivated_stocks": 0, "errors": []}
-        try:
-            constituents = NSEClient.get_nifty200_constituents()
-        except Exception as exc:
-            summary["errors"].append(str(exc))
-            logger.error(f"Failed to fetch NIFTY 200 constituents: {exc}")
-            return summary
+    def apply_constituents(constituents: Any) -> Dict[str, Any]:
+        """Apply a fetched NIFTY 200 constituent table to MongoDB.
 
-        existing = {stock["symbol"]: stock for stock in StockRepository.get_all_stocks()}
+        Additions are marked active, metadata changes are updated, and removed
+        constituents are deactivated. Historical price/RSI records are retained.
+        """
+        summary = {"total_fetched": 0, "new_stocks": 0, "updated_stocks": 0, "deactivated_stocks": 0, "errors": []}
+        existing = {stock["symbol"].strip().upper(): stock for stock in StockRepository.get_all_stocks()}
         fetched = {}
         for row in constituents.to_dict(orient="records"):
             stock = DataNormalizer.normalize_stock_metadata(row)
             if stock and stock.get("symbol"):
-                fetched[stock["symbol"]] = stock
+                fetched[stock["symbol"].strip().upper()] = stock
+        live_count = len(fetched)
 
         today = date.today().isoformat()
         for symbol, stock in fetched.items():
@@ -46,7 +45,7 @@ class StockUniverseService:
                 summary["deactivated_stocks"] += 1
 
         StockRepository.bulk_upsert_stocks(sorted(fetched.values(), key=lambda item: item["symbol"]))
-        summary["total_fetched"] = len(constituents)
+        summary["total_fetched"] = live_count
 
         # Keep historical stock, price, and RSI records for analysis. Reports
         # and current dashboards filter on active=True, so deactivated
@@ -54,8 +53,20 @@ class StockUniverseService:
         return summary
 
     @staticmethod
+    def sync_nifty200_universe(session: Optional[Any] = None) -> Dict[str, Any]:
+        summary = {"total_fetched": 0, "new_stocks": 0, "updated_stocks": 0, "deactivated_stocks": 0, "errors": []}
+        try:
+            constituents = NSEClient.get_nifty200_constituents()
+        except Exception as exc:
+            summary["errors"].append(str(exc))
+            logger.error(f"Failed to fetch NIFTY 200 constituents: {exc}")
+            return summary
+
+        return StockUniverseService.apply_constituents(constituents)
+
+    @staticmethod
     def sync_bundled_nifty200_universe() -> Dict[str, Any]:
-        """Sync the repository's pinned constituent snapshot into MongoDB.
+        """Sync the repository's bundled constituent snapshot into MongoDB.
 
         Excel exports use this snapshot so their stock list matches the list
         supplied with the project, regardless of changes to the live NSE page.

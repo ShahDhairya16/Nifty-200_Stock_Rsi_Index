@@ -19,7 +19,7 @@ STEP 1 — Install Python dependencies
   pip install -r requirements.txt
 
   Required packages: python-dotenv, nselib, tenacity, pandas, openpyxl,
-                     streamlit, plotly, pymongo
+                     streamlit, plotly, pymongo, google-genai
 
 
 STEP 2 — Configure environment variables
@@ -33,6 +33,14 @@ STEP 2 — Configure environment variables
     MONGO_URI=mongodb://localhost:27017/
     MONGO_DB_NAME=cnx200_rsi_dashboard
     LOG_LEVEL=INFO
+    GEMINI_API_KEY=your-google-ai-studio-key
+    GEMINI_MODEL=gemini-3.5-flash-lite
+    GEMINI_FALLBACK_MODELS=gemini-3.6-flash,gemini-3.5-flash,gemini-3.8-flash,gemini-3.7-flash,gemini-flash-latest,gemini-2.5-flash
+
+  The Gemini key can also be pasted directly into the AI Advisor page for
+  the current session. Get a key from https://aistudio.google.com/.
+  Auto suggestions are cached for 6 hours. Free-tier keys have low
+  request quotas; use a higher-quota key for production.
 
 
 STEP 3 — Ensure MongoDB is running
@@ -52,11 +60,17 @@ STEP 3 — Ensure MongoDB is running
 
 STEP 4 — Sync NIFTY 200 stock universe
 ----------------------------------------
-  Fetches current NIFTY 200 constituents from NSE and upserts into MongoDB:
+  Fetches current NIFTY 200 constituents from NSE, updates MongoDB and
+  data/stocks.json, and backfills any newly added stocks:
 
     python main.py --sync-universe
 
   Expected output: 200 stocks inserted / updated.
+
+  The dashboard also checks NSE automatically (throttled by
+  UNIVERSE_CHECK_INTERVAL_HOURS, default 24h), so the semi-annual March and
+  September rebalances are picked up without manual work. Removed stocks are
+  deactivated, not deleted, so historical charts remain available.
 
 
 STEP 5 — Backfill historical price data (1 year)
@@ -174,8 +188,13 @@ Option B — Manual pipeline via CLI
   Dashboard    — Live KPIs, Top 10 / Bottom 10 stocks by Average RSI.
   RSI Ranking  — Filterable and sortable full ranking table.
   Stock Analysis — Historical price chart and RSI trend chart per stock.
+  AI Advisor   — Gemini chatbot plus risk-based purchase shortlists.
   Reports      — Generate and download Excel workbooks directly in browser.
-  Sidebar      — "Refresh & Update Data" auto-fetches missing days from NSE.
+  Sidebar      — "Refresh & Update Data" auto-fetches missing days from NSE,
+                  updates the NIFTY 200 list, and recomputes RSI.
                   Theme toggle (light / dark mode).
+
+  The AI Advisor is educational only and is not SEBI-registered investment
+  advice. It uses only the RSI/price snapshot stored in MongoDB.
 
 ======================================================================

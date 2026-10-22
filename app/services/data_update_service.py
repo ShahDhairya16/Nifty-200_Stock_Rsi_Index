@@ -52,6 +52,7 @@ class DataUpdateService:
             "days_skipped_holiday": 0,
             "total_records_upserted": 0,
             "rsi_recomputed": False,
+            "universe": None,
             "errors": [],
             "status": "SUCCESS",
         }
@@ -67,6 +68,24 @@ class DataUpdateService:
 
         summary["latest_date_before"] = format_date_iso(latest_date)
         logger.info(f"DataUpdateService: Last stored price date = {latest_date}, today = {today}")
+
+        # Ensure the active universe and bundled snapshot match NSE. This also
+        # backfills newly added constituents and recomputes their RSI.
+        try:
+            from app.services.universe_update_service import UniverseUpdateService
+
+            summary["universe"] = UniverseUpdateService.auto_update(
+                force=True,
+                backfill_new=True,
+                recompute_rsi=True,
+            )
+            if summary["universe"].get("errors"):
+                logger.warning(
+                    "DataUpdateService: Universe sync reported: "
+                    f"{summary['universe']['errors']}"
+                )
+        except Exception as exc:
+            logger.warning(f"DataUpdateService: Stock universe sync skipped/failed ({exc}). Using stored active stocks.")
 
         # If already up-to-date (or today is weekend / market closed today)
         if latest_date >= today:
@@ -84,13 +103,6 @@ class DataUpdateService:
             return summary
 
         logger.info(f"DataUpdateService: Found {len(missing_days)} missing day(s) to fetch: {missing_days}")
-
-        # Ensure active universe is up to date with official NIFTY 200 constituents
-        try:
-            from app.services.stock_universe_service import StockUniverseService
-            StockUniverseService.sync_nifty200_universe()
-        except Exception as exc:
-            logger.warning(f"DataUpdateService: Stock universe sync skipped/failed ({exc}). Using stored active stocks.")
 
         # Load active symbols once
         active_stocks = StockRepository.get_active_stocks()

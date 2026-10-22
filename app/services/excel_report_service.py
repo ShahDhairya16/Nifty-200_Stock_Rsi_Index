@@ -50,7 +50,7 @@ class ExcelReportService:
             raise RuntimeError(error_message)
 
         logger.info(
-            "Pinned NIFTY 200 universe synchronized successfully from data/stocks.json. "
+            "NIFTY 200 snapshot synchronized successfully from data/stocks.json. "
             f"Fetched={universe_summary.get('total_fetched', 0)}, "
             f"New={universe_summary.get('new_stocks', 0)}, "
             f"Updated={universe_summary.get('updated_stocks', 0)}, "

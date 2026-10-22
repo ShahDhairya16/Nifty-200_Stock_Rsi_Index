@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from app.database.repositories import StockRepository, PriceRepository, RSIRepository
+from app.services.market_context_service import MarketContextService
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -36,6 +37,12 @@ def get_dashboard_summary():
         "lowest_rsi": ranking["average_rsi"].min() if not ranking.empty else None,
         "market_average": ranking["average_rsi"].mean() if not ranking.empty else None,
     }
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_ai_market_context():
+    snapshot = MarketContextService.get_snapshot()
+    return snapshot, MarketContextService.build_context_text(snapshot)
 
 
 @st.cache_data(ttl=300, show_spinner=False)

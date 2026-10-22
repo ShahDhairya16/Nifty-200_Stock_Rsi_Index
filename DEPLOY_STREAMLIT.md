@@ -45,8 +45,26 @@ For local use, copy `.env.example` to `.env` and set the values you need. The co
 | `NSE_MAX_RETRIES` | Number of NSE request attempts | `3` |
 | `NSE_RETRY_MIN_WAIT` | Minimum exponential retry wait, seconds | `2` |
 | `NSE_RETRY_MAX_WAIT` | Maximum exponential retry wait, seconds | `10` |
+| `GEMINI_API_KEY` | Google Gemini API key for the AI Advisor | Empty (AI page prompts for a key) |
+| `GEMINI_MODEL` | Preferred Gemini model used by the chatbot and recommendations | `gemini-3.5-flash-lite` |
+| `GEMINI_FALLBACK_MODELS` | Comma-separated models tried when the preferred model is unavailable or busy | `gemini-3.6-flash,gemini-3.5-flash,gemini-3.8-flash,gemini-3.7-flash,gemini-flash-latest,gemini-2.5-flash` |
+| `GEMINI_TEMPERATURE` | Gemini sampling temperature (0 = focused, 1 = creative) | `0.3` |
+| `UNIVERSE_CHECK_INTERVAL_HOURS` | Hours between automatic NSE NIFTY 200 constituent checks | `24` |
 
 Keep `.env` and `.streamlit/secrets.toml` out of Git. `.streamlit/secrets.toml.example` is a placeholder template only.
+
+## AI Advisor and automatic NIFTY 200 updates
+
+The **AI Advisor** page uses Google Gemini for two features:
+
+- A **chatbot** that answers questions using the current RSI 22/44/66, average RSI, latest close, and 30-day change for every active NIFTY 200 stock.
+- A **purchase recommendation** screen that screens the same snapshot against a risk profile, horizon, budget, and existing holdings. Results are educational and are not SEBI-registered investment advice.
+
+Add a key from [Google AI Studio](https://aistudio.google.com/) as `GEMINI_API_KEY`, or paste it into the AI Advisor page for the current session only. The app supports both the current `google-genai` package and the older `google-generativeai` package.
+
+The dashboard generates an automatic shortlist on first load and caches it for 6 hours; per-stock AI views are cached per symbol. AI failures are retried after 5 minutes. A free-tier Gemini key allows only a small number of requests per minute/day, so heavy use can hit `429` quota errors. Use a key with higher quota for production.
+
+The NIFTY 200 list changes at NSE's semi-annual review (effective around the last trading day of March and September), and replacements can occur at other times. On startup and on **Refresh & Update Data**, the app fetches the official NSE constituent file, compares it with MongoDB, updates `data/stocks.json`, deactivates removed symbols, backfills newly added symbols, and recomputes RSI. The check is throttled by `UNIVERSE_CHECK_INTERVAL_HOURS`; the Reports page always uses the latest auto-synced snapshot. Failures leave the existing universe intact and are shown in the logs/sidebar.
 
 ## MongoDB Atlas setup
 
@@ -89,6 +107,12 @@ HISTORICAL_END_DATE = ""
 NSE_MAX_RETRIES = 3
 NSE_RETRY_MIN_WAIT = 2
 NSE_RETRY_MAX_WAIT = 10
+
+GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
+GEMINI_FALLBACK_MODELS = "gemini-3.6-flash,gemini-3.5-flash,gemini-3.8-flash,gemini-3.7-flash,gemini-flash-latest,gemini-2.5-flash"
+GEMINI_TEMPERATURE = 0.3
+UNIVERSE_CHECK_INTERVAL_HOURS = 24
 ```
 
 After saving secrets, deploy the app. The dashboard pages show a safe user-facing database error when database access fails. Confirm Atlas network access and credentials in Cloud settings if the connection cannot be established.
@@ -100,7 +124,9 @@ After saving secrets, deploy the app. The dashboard pages show a safe user-facin
 - Stock list and latest RSI rankings are populated, and dates match the imported data.
 - Stock filters, chart ranges, and RSI rankings respond as expected.
 - The Reports page generates and downloads an `.xlsx` workbook.
+- The AI Advisor page accepts a Gemini key and returns both chat answers and a structured shortlist.
 - **Refresh & Update Data** can be explicitly invoked; inspect its summary and logs if NSE has an outage or no new market data is available.
+- A NIFTY 200 constituent change updates MongoDB, `data/stocks.json`, and the newly added stocks' history.
 - Opening or reloading the website does not start a historical backfill.
 - No MongoDB credentials are committed to Git or shown to clients.
 

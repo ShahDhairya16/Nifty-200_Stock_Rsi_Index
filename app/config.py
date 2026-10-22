@@ -31,5 +31,17 @@ class Config:
     NSE_RETRY_MIN_WAIT: int = int(get_secret("NSE_RETRY_MIN_WAIT", 2))
     NSE_RETRY_MAX_WAIT: int = int(get_secret("NSE_RETRY_MAX_WAIT", 10))
 
+    # Google Gemini (AI assistant + stock recommendations)
+    GEMINI_API_KEY: str = get_secret("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = get_secret("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    GEMINI_FALLBACK_MODELS: str = get_secret(
+        "GEMINI_FALLBACK_MODELS",
+        "gemini-3.6-flash,gemini-3.5-flash,gemini-3.8-flash,gemini-3.7-flash,gemini-flash-latest,gemini-2.5-flash",
+    )
+    GEMINI_TEMPERATURE: float = float(get_secret("GEMINI_TEMPERATURE", 0.3))
+
+    # NIFTY 200 universe refresh cadence (hours between automated NSE checks)
+    UNIVERSE_CHECK_INTERVAL_HOURS: int = int(get_secret("UNIVERSE_CHECK_INTERVAL_HOURS", 24))
+
 
 config = Config()

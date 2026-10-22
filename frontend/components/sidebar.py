@@ -32,7 +32,7 @@ def render_sidebar():
     apply_theme()
     with st.sidebar:
         st.markdown("## NIFTY 200")
-        st.caption("RSI analytics workspace")
+        st.caption("RSI analytics workspace · list auto-syncs daily")
         st.divider()
 
         try:
@@ -92,6 +92,15 @@ def render_sidebar():
                     st.caption("Check the application logs for technical details.")
                 else:
                     st.error("❌ Update failed. Check the database connection and application logs.")
+
+                universe = result.get("universe") or {}
+                added = universe.get("added") or []
+                removed = universe.get("removed") or []
+                if added or removed:
+                    st.info(
+                        "NIFTY 200 list updated: "
+                        f"{len(added)} added, {len(removed)} removed."
+                    )
 
             refresh_data()
             st.rerun()

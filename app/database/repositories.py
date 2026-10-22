@@ -117,6 +117,24 @@ class StockRepository:
         return col.count_documents(filter_query)
 
 
+class SyncMetadataRepository:
+    """Repository for small key/value pipeline metadata documents."""
+
+    @staticmethod
+    def get_collection():
+        return get_database()["sync_metadata"]
+
+    @classmethod
+    def get(cls, key: str) -> Optional[Dict[str, Any]]:
+        return cls.get_collection().find_one({"_id": key})
+
+    @classmethod
+    def save(cls, key: str, document: Dict[str, Any]) -> None:
+        payload = dict(document)
+        payload["_id"] = key
+        cls.get_collection().replace_one({"_id": key}, payload, upsert=True)
+
+
 class PriceRepository:
     """Repository handling MongoDB operations for daily prices."""
 

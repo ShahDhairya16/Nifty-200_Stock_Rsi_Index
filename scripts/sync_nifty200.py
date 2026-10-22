@@ -5,8 +5,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from app.services.stock_universe_service import StockUniverseService
-from app.utils.logger import logger
+from app.services.universe_update_service import UniverseUpdateService
 
 def main():
     print("\n" + "=" * 60)
@@ -16,16 +15,25 @@ def main():
     print("Starting NIFTY 200 Universe Sync...\n")
     print("Fetching latest NIFTY 200 constituents...\n")
 
-    summary = StockUniverseService.sync_nifty200_universe()
+    summary = UniverseUpdateService.auto_update(
+        force=True,
+        backfill_new=True,
+        recompute_rsi=True,
+    )
 
-    if summary["errors"]:
-        print(f"[FAILED] Universe sync encountered errors: {summary['errors']}")
+    if summary.get("errors"):
+        print(f"[WARN] Universe sync reported: {summary['errors']}")
+
+    universe = summary.get("universe_summary") or {}
+    print(f"Status: {summary.get('status')}\n")
+    print(f"Fetched: {summary.get('symbol_count', universe.get('total_fetched', 0))} stocks\n")
+    print(f"New Stocks: {len(summary.get('added', []))} {summary.get('added', [])}")
+    print(f"Removed Stocks: {len(summary.get('removed', []))} {summary.get('removed', [])}")
+    print(f"Snapshot Updated: {summary.get('snapshot_updated', False)}")
+    print(f"RSI Recomputed: {summary.get('rsi_recomputed', False)}\n")
+
+    if summary.get("status") == "FAILED":
         sys.exit(1)
-
-    print(f"Fetched: {summary['total_fetched']} stocks\n")
-    print(f"New Stocks: {summary['new_stocks']}")
-    print(f"Updated Stocks: {summary['updated_stocks']}")
-    print(f"Deactivated Stocks: {summary['deactivated_stocks']}\n")
 
     print("Sync completed successfully.\n")
 

@@ -3,12 +3,13 @@ from app.database.init_db import init_database
 from app.services.ingestion_service import IngestionService
 from app.services.rsi_service import RSIService
 from app.services.excel_report_service import ExcelReportService
+from app.services.universe_update_service import UniverseUpdateService
 
 
 def main():
     parser = argparse.ArgumentParser(description="NIFTY 200 RSI MongoDB data pipeline")
     parser.add_argument("--init-db", action="store_true", help="Initialize MongoDB collections and indexes")
-    parser.add_argument("--sync-universe", action="store_true", help="Sync NIFTY 200 universe from NSE")
+    parser.add_argument("--sync-universe", action="store_true", help="Sync NIFTY 200 universe and bundled snapshot from NSE")
     parser.add_argument("--backfill-historical", action="store_true", help="Backfill historical price data")
     parser.add_argument("--recover-missing", action="store_true", help="Update missing market data")
     parser.add_argument("--compute-rsi", action="store_true", help="Compute RSI metrics for active stocks")
@@ -23,7 +24,7 @@ def main():
         success = init_database()
         print("Database initialized successfully." if success else "Database initialization failed.")
     if args.sync_universe:
-        print(IngestionService.sync_stock_universe())
+        print(UniverseUpdateService.auto_update(force=True, backfill_new=True, recompute_rsi=True))
     if args.backfill_historical:
         print(IngestionService.backfill_historical_data(args.start_date, args.end_date, args.symbols))
     if args.recover_missing:
