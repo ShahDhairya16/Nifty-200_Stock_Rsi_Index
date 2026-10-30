@@ -90,5 +90,9 @@ class NSEClient:
             logger.info(f"Retrieved Bhavcopy with {len(df)} total market rows for date {date_str}.")
             return df
         except FileNotFoundError:
-            logger.warning(f"NSE Bhavcopy not available for trade date {date_str} (possible market holiday/weekend).")
-            return pd.DataFrame()
+            # nselib currently maps both a genuine missing bhavcopy and NSE's
+            # HTTP 403 response to FileNotFoundError. Keep this distinguishable
+            # from an empty holiday response so callers can use the per-symbol
+            # historical endpoint as a fallback.
+            logger.warning(f"NSE Bhavcopy unavailable for {date_str}; it may be a holiday or an NSE 403.")
+            raise ConnectionError(f"NSE Bhavcopy unavailable for {date_str} (holiday or HTTP 403).")

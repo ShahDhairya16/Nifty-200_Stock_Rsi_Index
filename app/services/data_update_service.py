@@ -1,4 +1,5 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Callable
 
 from app.database.repositories import StockRepository, PriceRepository, RSIRepository
@@ -60,7 +61,11 @@ class DataUpdateService:
         }
 
         latest_date = PriceRepository.latest_price_date()
-        today = date.today()
+        now_ist = datetime.now(ZoneInfo("Asia/Kolkata"))
+        today = now_ist.date()
+        # NSE's end-of-day Bhavcopy is published after the cash market closes.
+        # During the session, the last complete price/RSI remains yesterday's.
+        target_date = today if now_ist.time() >= datetime.strptime("16:00", "%H:%M").time() else today - timedelta(days=1)
 
         if latest_date is None:
             summary["status"] = "FAILED"
@@ -69,7 +74,7 @@ class DataUpdateService:
             return summary
 
         summary["latest_date_before"] = format_date_iso(latest_date)
-        logger.info(f"DataUpdateService: Last stored price date = {latest_date}, today = {today}")
+        logger.info(f"DataUpdateService: Last stored price date = {latest_date}, target complete date = {target_date}")
 
         # Ensure the active universe and bundled snapshot match NSE. This also
         # backfills newly added constituents and recomputes their RSI.
@@ -111,7 +116,7 @@ class DataUpdateService:
         ).get("total_records_processed", 0)
 
         # If already up-to-date (or today is weekend / market closed today)
-        if latest_date >= today:
+        if latest_date >= target_date:
             if history_records > 0:
                 RSIService.compute_all_active_stocks_rsi()
                 summary["rsi_recomputed"] = True
@@ -120,7 +125,7 @@ class DataUpdateService:
             logger.info("DataUpdateService: Data is already up-to-date.")
             return summary
 
-        missing_days = DataUpdateService._get_missing_trading_days(latest_date, today)
+        missing_days = DataUpdateService._get_missing_trading_days(latest_date, target_date)
         summary["missing_days_checked"] = len(missing_days)
 
         if not missing_days:
@@ -137,7 +142,28 @@ class DataUpdateService:
         for index, trade_date in enumerate(missing_days, 1):
             date_str = format_date_iso(trade_date)
             try:
-                df_bhav = NSEClient.get_daily_market_data(trade_date)
+                try:
+                    df_bhav = NSEClient.get_daily_market_data(trade_date)
+                except ConnectionError as bhav_error:
+                    # NSE's aggregate archive is often blocked independently
+                    # of the per-symbol history endpoint. Recover the date from
+                    # individual NSE histories instead of silently treating a
+                    # 403 as a holiday.
+                    logger.warning(f"DataUpdateService: {bhav_error} Trying per-symbol history fallback.")
+                    fallback_records = []
+                    for symbol in sorted(active_symbols):
+                        history = NSEClient.get_stock_historical_data(symbol, trade_date, trade_date)
+                        fallback_records.extend(
+                            record for record in DataNormalizer.normalize_price_dataframe(history)
+                            if record.get("symbol") == symbol and record.get("trade_date") == trade_date
+                        )
+                    if not fallback_records:
+                        raise ConnectionError(f"No daily or per-symbol price data available for {date_str}.") from bhav_error
+                    count = PriceRepository.bulk_upsert_prices(fallback_records)
+                    summary["days_with_data"] += 1
+                    summary["total_records_upserted"] += count
+                    logger.info(f"DataUpdateService: Fallback upserted {count} price records for {date_str}.")
+                    continue
 
                 if df_bhav is None or df_bhav.empty:
                     # Likely a market holiday or trading was suspended
@@ -190,6 +216,13 @@ class DataUpdateService:
 
         if summary["errors"]:
             summary["status"] = "PARTIAL" if summary["days_with_data"] > 0 else "FAILED"
+        elif summary["total_records_upserted"] == 0 and summary["latest_date_after"] == summary["latest_date_before"] and latest_date < target_date:
+            summary["status"] = "FAILED"
+            summary["errors"].append(
+                f"No new price data was stored; latest available date remains {summary['latest_date_after']}."
+            )
+        elif summary["total_records_upserted"] > 0:
+            summary["status"] = "SUCCESS"
 
         logger.info(f"DataUpdateService: Done. Summary = {summary}")
         return summary

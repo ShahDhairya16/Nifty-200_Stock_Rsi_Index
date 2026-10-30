@@ -92,6 +92,8 @@ def render_sidebar():
                     st.caption("Check the application logs for technical details.")
                 else:
                     st.error("❌ Update failed. Check the database connection and application logs.")
+                    if errors:
+                        st.caption(" ".join(str(error) for error in errors))
 
                 universe = result.get("universe") or {}
                 added = universe.get("added") or []
