@@ -7,7 +7,8 @@ from app.services.data_normalizer import DataNormalizer
 from app.services.historical_data_service import HistoricalDataService
 from app.services.nse_client import NSEClient
 from app.services.rsi_service import RSIService
-from app.utils.date_utils import format_date_iso, parse_date, is_weekend
+from app.utils.date_utils import format_date_iso
+from app.utils.nse_trading_calendar import is_nse_trading_session
 from app.utils.logger import logger
 
 
@@ -24,13 +25,12 @@ class DataUpdateService:
     @staticmethod
     def _get_missing_trading_days(latest_date: date, up_to: date) -> List[date]:
         """
-        Returns a list of weekday dates between (latest_date+1) and up_to inclusive.
-        Weekends are skipped; NSE holidays will simply return empty Bhavcopy and be logged.
+        Returns scheduled NSE sessions between (latest_date+1) and up_to inclusive.
         """
         missing = []
         cursor = latest_date + timedelta(days=1)
         while cursor <= up_to:
-            if not is_weekend(cursor):
+            if is_nse_trading_session(cursor):
                 missing.append(cursor)
             cursor += timedelta(days=1)
         return missing
@@ -129,6 +129,8 @@ class DataUpdateService:
         summary["missing_days_checked"] = len(missing_days)
 
         if not missing_days:
+            # A gap containing no scheduled sessions is complete (e.g. Friday
+            # through Sunday with no special session).
             summary["status"] = "UP_TO_DATE"
             summary["latest_date_after"] = format_date_iso(latest_date)
             return summary
@@ -166,9 +168,9 @@ class DataUpdateService:
                     continue
 
                 if df_bhav is None or df_bhav.empty:
-                    # Likely a market holiday or trading was suspended
-                    summary["days_skipped_holiday"] += 1
-                    logger.info(f"DataUpdateService: No Bhavcopy data for {date_str} (holiday/weekend).")
+                    message = f"Expected NSE trading-session data is unavailable for {date_str}; no Bhavcopy rows returned."
+                    summary["errors"].append(message)
+                    logger.warning(f"DataUpdateService: {message}")
                     continue
 
                 # Normalise to standard OHLCV format
@@ -178,8 +180,9 @@ class DataUpdateService:
                 nifty200_records = [r for r in records if r.get("symbol") in active_symbols]
 
                 if not nifty200_records:
-                    summary["days_skipped_holiday"] += 1
-                    logger.warning(f"DataUpdateService: Bhavcopy for {date_str} had 0 NIFTY 200 records.")
+                    message = f"Expected NSE trading-session data is unavailable for {date_str}; Bhavcopy had no active NIFTY 200 records."
+                    summary["errors"].append(message)
+                    logger.warning(f"DataUpdateService: {message}")
                     continue
 
                 count = PriceRepository.bulk_upsert_prices(nifty200_records)
