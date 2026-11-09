@@ -20,6 +20,14 @@ class NSEClient:
 
     @staticmethod
     @nse_retry
+    def get_trading_holiday_calendar() -> pd.DataFrame:
+        """Fetch NSE's official holiday calendar for all market segments."""
+        import nselib
+
+        return nselib.trading_holiday_calendar()
+
+    @staticmethod
+    @nse_retry
     def get_nifty200_constituents() -> pd.DataFrame:
         """
         Fetches official NIFTY 200 constituent list from NSE.

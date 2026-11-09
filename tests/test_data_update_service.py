@@ -1,10 +1,12 @@
-from datetime import date, datetime as real_datetime
+from datetime import date, datetime, datetime as real_datetime, timezone
 import unittest
 from unittest.mock import patch
 
 import pandas as pd
 
+from app.services.nse_client import NSEClient
 from app.services.data_update_service import DataUpdateService
+from app.utils import nse_trading_calendar
 
 
 class _BeforeCutoffDateTime(real_datetime):
@@ -29,6 +31,12 @@ def _run_special_session_update(bhavcopy, upsert_count):
 
 
 class DataUpdateServiceTests(unittest.TestCase):
+    def setUp(self):
+        # Keep unit tests deterministic and independent of NSE/network access.
+        nse_trading_calendar._cached_at = datetime.now(timezone.utc)
+        nse_trading_calendar._cached_holidays = set(nse_trading_calendar.NSE_HOLIDAYS)
+        nse_trading_calendar._cached_special_sessions = set()
+
     def test_weekend_special_session_is_included(self):
         self.assertEqual(DataUpdateService._get_missing_trading_days(
             date(2026, 11, 6), date(2026, 11, 8)), [date(2026, 11, 8)])
@@ -44,6 +52,18 @@ class DataUpdateServiceTests(unittest.TestCase):
     def test_nse_holiday_is_excluded(self):
         self.assertEqual(DataUpdateService._get_missing_trading_days(
             date(2026, 11, 9), date(2026, 11, 10)), [])
+
+    def test_official_calendar_parses_holidays_and_muhurat_sessions(self):
+        official_calendar = pd.DataFrame([
+            {"Product": "Equities", "tradingDate": "08-Nov-2027", "description": "Diwali Laxmi Pujan*"},
+            {"Product": "Equities", "tradingDate": "09-Nov-2027", "description": "Diwali Balipratipada"},
+            {"Product": "Equity Derivatives", "tradingDate": "10-Nov-2027", "description": "Other segment holiday"},
+        ])
+        with patch.object(NSEClient, "get_trading_holiday_calendar", return_value=official_calendar):
+            holidays, special_sessions = nse_trading_calendar._load_official_calendar()
+
+        self.assertEqual(holidays, {date(2027, 11, 8), date(2027, 11, 9)})
+        self.assertEqual(special_sessions, {date(2027, 11, 8)})
 
     def test_empty_data_for_special_session_is_not_up_to_date(self):
         summary, upsert, _ = _run_special_session_update(pd.DataFrame(), 0)

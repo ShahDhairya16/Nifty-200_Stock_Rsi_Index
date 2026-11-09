@@ -1,6 +1,6 @@
 # Deploying the NIFTY 200 RSI dashboard
 
-The Streamlit entry point is `frontend/streamlit_app.py`. It reads existing stock, price, and RSI records from MongoDB. It does not run a historical backfill or recompute all RSI data at startup. The sidebar's **Refresh & Update Data** action explicitly checks missing weekdays, fetches NSE Bhavcopy data, stores NIFTY 200 prices, and recomputes RSI when new prices arrive. NSE does not publish data for every weekday (market holidays are skipped).
+The Streamlit entry point is `frontend/streamlit_app.py`. It reads existing stock, price, and RSI records from MongoDB. It does not run a historical backfill or recompute all RSI data at startup. The sidebar's **Refresh & Update Data** action checks missing NSE sessions against the NSE holiday calendar, fetches NSE Bhavcopy data, stores NIFTY 200 prices, and recomputes RSI when new prices arrive. The official holiday calendar is refreshed from NSE and cached for 24 hours. Muhurat sessions are detected from NSE's Diwali/Laxmi Pujan calendar entries; other separately announced special sessions may need to be added to the maintained exception list if NSE does not expose them in that calendar.
 
 ## Local development
 
