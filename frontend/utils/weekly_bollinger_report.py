@@ -13,7 +13,7 @@ def refresh_weekly_bollinger_report(period: int, multiplier: float,
     """Fetch, calculate, and cache one report for all NIFTY 750 pages in session."""
     universe = WeeklyBollingerService.fetch_stock_universe()
     report = WeeklyBollingerService.calculate_universe(
-        universe, period=period, multiplier=multiplier, as_of=as_of or date.today(),
+        universe, period=period, multiplier=multiplier, as_of=as_of,
         progress_callback=progress_callback,
     )
     st.session_state[REPORT_KEY] = report

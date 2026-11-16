@@ -1,6 +1,7 @@
 import sys
-from datetime import date
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -24,11 +25,12 @@ st.caption(
 
 period = int(st.session_state.get("bollinger_period_daily", WeeklyBollingerService.DEFAULT_PERIOD))
 multiplier = WeeklyBollingerService.DEFAULT_MULTIPLIER
+market_today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
 report_end_date = st.date_input(
     "Report end date",
-    value=date.today(),
-    max_value=date.today(),
-    help="The latest completed NSE trading session on or before this date is used.",
+    value=market_today,
+    max_value=market_today,
+    help="Uses the selected NIFTY 200-style report end date. For today, the close is included after 15:30 IST.",
 )
 target_trade_date = WeeklyBollingerService.latest_completed_trade_date(report_end_date)
 

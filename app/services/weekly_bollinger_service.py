@@ -1,10 +1,11 @@
 """Daily Bollinger calculations for the supplied NIFTY Total Market universe."""
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -65,14 +66,25 @@ class WeeklyBollingerService:
 
     @staticmethod
     def latest_completed_trade_date(as_of: Optional[date] = None,
-                                    trading_session_checker: Optional[Callable] = None) -> date:
-        """Return the latest completed NSE session on or before the report date."""
+                                    trading_session_checker: Optional[Callable] = None,
+                                    now: Optional[datetime] = None) -> date:
+        """Return the latest completed NSE session using India market time.
+
+        On today's date, include today's close after the 15:30 IST cash-market
+        close. Before then, use the prior completed trading session. Historical
+        report dates are treated as completed dates, matching the NIFTY 200
+        report end-date behavior.
+        """
         if trading_session_checker is None:
             trading_session_checker = WeeklyBollingerService.is_nse_trading_session
-        today = date.today()
-        target = as_of or today
-        if target >= today:
-            target = today - timedelta(days=1)
+        market_now = now or datetime.now(ZoneInfo("Asia/Kolkata"))
+        if market_now.tzinfo is None:
+            market_now = market_now.replace(tzinfo=ZoneInfo("Asia/Kolkata"))
+        market_now = market_now.astimezone(ZoneInfo("Asia/Kolkata"))
+        today = market_now.date()
+        target = min(as_of or today, today)
+        if target == today and market_now.time() < time(15, 30):
+            target -= timedelta(days=1)
         while not trading_session_checker(target):
             target -= timedelta(days=1)
         return target
