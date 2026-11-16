@@ -327,6 +327,7 @@ class WeeklyBollingerService:
             # not mark every constituent as missing that date.
             through = dates[-1] - timedelta(days=1)
         results, unavailable = [], []
+        daily_closes_by_symbol = {}
         global_errors = [
             f"{trade_date:%Y-%m-%d}: {daily_market_data[trade_date][1]}"
             for trade_date in dates if daily_market_data[trade_date][1]
@@ -335,6 +336,9 @@ class WeeklyBollingerService:
             symbol = stock["symbol"]
             values = [daily_market_data[trade_date][0].get(symbol, np.nan) for trade_date in dates]
             aligned = pd.Series(values, index=dates, dtype="float64")
+            daily_closes_by_symbol[symbol] = [
+                float(value) if pd.notna(value) else None for value in aligned.tolist()
+            ]
             if aligned.notna().sum() != period:
                 missing_dates = [
                     stamp.strftime("%Y-%m-%d")
@@ -361,6 +365,8 @@ class WeeklyBollingerService:
         return {
             "results": cls.sort_results(results),
             "unavailable": unavailable,
+            "price_dates": [stamp.strftime("%Y-%m-%d") for stamp in dates],
+            "daily_closes_by_symbol": daily_closes_by_symbol,
             "latest_trade_date": dates[-1],
             "universe_count": len(universe),
             "period": period,
@@ -372,32 +378,35 @@ class WeeklyBollingerService:
     @staticmethod
     def build_excel_report(report: Dict[str, Any]) -> Dict[str, Any]:
         workbook = Workbook()
-        sheet = workbook.active
-        sheet.title = "Daily Bollinger Ranking"
+        history = workbook.active
+        history.title = "Daily Closing Prices"
+        symbols = sorted(report.get("daily_closes_by_symbol", {}))
+        history.append(["Trading Date"] + symbols)
+        for day_index, label in enumerate(report.get("price_dates", [])):
+            history.append([label] + [
+                report["daily_closes_by_symbol"][symbol][day_index]
+                for symbol in symbols
+            ])
+
+        sheet = workbook.create_sheet("Bollinger Ranking")
         sheet.append(["Rank", "Stock Symbol", "Latest Closing Price", "Middle Band",
-                      "Standard Deviation", "Upper Band", "Lower Band"])
+                      "Standard Deviation", "Upper Band", "Lower Band", "Observations Used"])
         for item in report["results"]:
             sheet.append([item["rank"], item["symbol"], item["latest_close"], item["middle_band"],
-                          item["standard_deviation"], item["upper_band"], item["lower_band"]])
+                          item["standard_deviation"], item["upper_band"], item["lower_band"],
+                          item["observations_used"]])
         missing = workbook.create_sheet("Unavailable Data")
         missing.append(["Stock Symbol", "Company Name", "Reason"])
         for item in report["unavailable"]:
             missing.append([item["symbol"], item["company_name"], item["reason"]])
-        history = workbook.create_sheet("Daily Closes")
-        ranked_results = report["results"]
-        symbols = [item["symbol"] for item in ranked_results]
-        history.append(["Trading Date"] + symbols)
-        if ranked_results:
-            labels = ranked_results[0]["price_dates"]
-            for day_index, label in enumerate(labels):
-                history.append([label] + [item["daily_closes"][day_index] for item in ranked_results])
         notes = workbook.create_sheet("Run Details")
         notes.append(["Setting", "Value"])
         for row in (("Latest completed trading session", report["latest_trade_date"].isoformat()),
                     ("Universe source", "data/ind_niftytotalmarket_list.xlsx"),
                     ("Earliest trading session in calculation", report["history_start_date"].isoformat()),
                     ("Price data source", report["price_data_source"]),
-                    ("Close construction", "Daily NSE close for each session; missing stock sessions are not forward-filled"),
+                    ("Close construction", "Available daily closes for all universe stocks; missing sessions are blank and are not forward-filled"),
+                    ("Closing-price sheet", "Contains partial history even for stocks omitted from the 385-session ranking"),
                     ("Trading sessions per calculation", report["period"]),
                     ("Population variance divisor", report["period"]),
                     ("Standard deviation multiplier", report["multiplier"]),
