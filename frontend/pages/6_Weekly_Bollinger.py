@@ -18,15 +18,14 @@ from frontend.utils.weekly_bollinger_report import (
 
 st.title("NIFTY 750 Bollinger Dashboard")
 st.caption(
-    "55 completed weekly closes per stock, built from the final NSE trading-day close "
-    "in each week. The current incomplete week is excluded; bands use population standard deviation. "
-    "Bands use Middle Band ± 3.7 × Standard Deviation."
+    "The default window is each stock’s last 385 completed NSE trading-session closes, with population variance "
+    "and a fixed 3.7 multiplier: Upper/Lower Band = Middle Band ± 3.7 × Standard Deviation."
 )
 report = get_weekly_bollinger_report()
 if not report:
     with st.container(border=True):
         st.subheader("Load the latest dashboard snapshot")
-        st.caption("The first refresh fetches weekly price history for the supplied stock universe.")
+        st.caption("The refresh fetches daily market-wide NSE files and aligns the last 385 sessions.")
         if st.button("Load NIFTY 750 Dashboard", type="primary"):
             progress = st.progress(0, text="Starting NIFTY 750 data refresh…")
 
@@ -35,13 +34,13 @@ if not report:
                 if completed == total or completed % interval == 0:
                     progress.progress(
                         completed / total,
-                        text=f"Fetched {completed} of {total} symbols · latest: {symbol}",
+                        text=f"Fetched {completed} of {total} daily market files · latest: {symbol}",
                     )
 
             try:
-                with st.spinner("Fetching and calculating the latest weekly snapshot…"):
+                with st.spinner("Fetching and calculating the latest daily snapshot…"):
                     refresh_weekly_bollinger_report(
-                        int(st.session_state.get("bollinger_period", 55)),
+                        int(st.session_state.get("bollinger_period_daily", WeeklyBollingerService.DEFAULT_PERIOD)),
                         WeeklyBollingerService.DEFAULT_MULTIPLIER,
                         progress_callback=update_progress,
                     )
@@ -56,9 +55,9 @@ else:
     metric_cols[0].metric("Universe symbols", report["universe_count"])
     metric_cols[1].metric("Eligible stocks", eligible)
     metric_cols[2].metric("Unavailable / insufficient", unavailable)
-    metric_cols[3].metric("Latest completed week", report["latest_week_end"].strftime("%d %b %Y"))
+    metric_cols[3].metric("Latest completed session", report["latest_trade_date"].strftime("%d %b %Y"))
     st.caption(
-        f"Snapshot settings: {report['period']} weeks · {report['multiplier']:g}σ · "
+        f"Snapshot settings: {report['period']} working days · {report['multiplier']:g}σ · "
         f"{report['history_start_date']:%d %b %Y} history start"
     )
 
@@ -80,4 +79,4 @@ else:
             ["Latest Closing Price", "Middle Band", "Upper Band", "Lower Band"]
         })
     else:
-        st.warning("No stocks currently have all required weekly closes.")
+        st.warning("No stocks currently have all required daily closes.")

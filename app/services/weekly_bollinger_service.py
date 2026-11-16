@@ -1,6 +1,7 @@
-"""Weekly Bollinger ranking for the NIFTY Total Market (750-stock) universe."""
+"""Daily Bollinger calculations for the supplied NIFTY Total Market universe."""
 from datetime import date, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional
@@ -9,25 +10,35 @@ import numpy as np
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
+from nselib import capital_market
 
 from app.services.data_normalizer import DataNormalizer
-from app.services.nse_client import NSEClient
+from app.utils.nse_trading_calendar import NSE_HOLIDAYS, NSE_SPECIAL_SESSIONS
+
+
+@lru_cache(maxsize=400)
+def _fetch_bhavcopy_cached(trade_date: date, symbol_series: tuple) -> Dict[str, float]:
+    """Cache only the selected universe's closes, not full market-wide files."""
+    frame = capital_market.bhav_copy_equities(trade_date.strftime("%d-%m-%Y"))
+    if frame is None or frame.empty:
+        raise ValueError("NSE bhavcopy was empty")
+    return WeeklyBollingerService._normalize_bhavcopy_day(
+        frame, trade_date, dict(symbol_series)
+    )
 
 
 class WeeklyBollingerService:
-    """Fetch the live NIFTY 750 universe, create weekly closes, and export ranks.
+    """Fetch daily NSE prices for the supplied NIFTY universe and export bands.
 
     The supplied NIFTY Total Market constituent workbook is the authoritative
-    universe for this report. Weekly closes are calculated from daily exchange
-    records as the last traded close in each Monday-Sunday week. No daily values
-    are used as individual Bollinger observations.
+    universe for this report. Each calculation uses the last 385 completed NSE
+    trading-session closes, sourced from market-wide daily bhavcopy files.
     """
 
     UNIVERSE_FILE = Path(__file__).resolve().parents[2] / "data" / "ind_niftytotalmarket_list.xlsx"
-    DEFAULT_PERIOD = 55
+    DEFAULT_PERIOD = 385
     DEFAULT_MULTIPLIER = 3.7
     MAX_CONCURRENT_REQUESTS = 8
-    HISTORY_BUFFER_DAYS = 14
 
     @classmethod
     def fetch_stock_universe(cls) -> List[Dict[str, str]]:
@@ -46,53 +57,151 @@ class WeeklyBollingerService:
                 constituents[symbol] = {
                     "symbol": symbol,
                     "company_name": stock.get("company_name") or symbol,
+                    "series": stock.get("series") or "EQ",
                 }
         if not constituents:
             raise ValueError("The supplied NIFTY universe workbook contains no stock symbols.")
         return [constituents[s] for s in sorted(constituents)]
 
     @staticmethod
-    def latest_completed_week_end(as_of: Optional[date] = None) -> date:
-        """Return the prior Friday; the current Monday-Sunday candle is excluded."""
-        today = as_of or date.today()
-        current_friday = today + timedelta(days=(4 - today.weekday()) % 7)
-        return current_friday - timedelta(days=7)
+    def latest_completed_trade_date(as_of: Optional[date] = None,
+                                    trading_session_checker: Optional[Callable] = None) -> date:
+        """Return the latest completed NSE session on or before the report date."""
+        if trading_session_checker is None:
+            trading_session_checker = WeeklyBollingerService.is_nse_trading_session
+        today = date.today()
+        target = as_of or today
+        if target >= today:
+            target = today - timedelta(days=1)
+        while not trading_session_checker(target):
+            target -= timedelta(days=1)
+        return target
 
     @staticmethod
-    def weekly_closes_from_daily(daily: pd.DataFrame, through: date) -> pd.Series:
-        """Turn normalized daily records into last-trading-close per week."""
-        if daily is None or daily.empty:
-            return pd.Series(dtype=float)
-        records = DataNormalizer.normalize_price_dataframe(daily)
-        if not records:
-            return pd.Series(dtype=float)
-        frame = pd.DataFrame(records)
-        frame["trade_date"] = pd.to_datetime(frame["trade_date"])
-        frame = frame[(frame["trade_date"].dt.date <= through) & frame["close_price"].notna()]
-        if frame.empty:
-            return pd.Series(dtype=float)
-        frame = frame.sort_values("trade_date").set_index("trade_date")
-        # W-SUN labels the whole Monday-Sunday trading week. Selecting the
-        # final observed close handles Friday holidays and market closures.
-        return frame["close_price"].resample("W-SUN").last().dropna()
+    def is_nse_trading_session(day: date) -> bool:
+        """Use maintained 2025-26 holidays locally; consult NSE outside that range."""
+        if day.year in {2025, 2026}:
+            return day in NSE_SPECIAL_SESSIONS or (
+                day.weekday() < 5 and day not in NSE_HOLIDAYS
+            )
+        from app.utils.nse_trading_calendar import is_nse_trading_session
+
+        return is_nse_trading_session(day)
 
     @staticmethod
-    def align_completed_weeks(weekly: pd.Series, through: date, period: int) -> pd.Series:
-        """Return the exact consecutive completed-week window ending at `through`."""
+    def expected_trading_days(through: date, period: int,
+                              trading_session_checker: Optional[Callable] = None) -> List[date]:
+        """Return the latest exact number of NSE working-session dates."""
         if period < 1:
             raise ValueError("Period must be positive.")
-        last_week_label = pd.Timestamp(through) + pd.Timedelta(days=6 - through.weekday())
-        expected_weeks = pd.date_range(end=last_week_label, periods=period, freq="W-SUN")
-        return weekly.reindex(expected_weeks)
+        if trading_session_checker is None:
+            trading_session_checker = WeeklyBollingerService.is_nse_trading_session
+        dates = []
+        cursor = through
+        earliest_allowed = through - timedelta(days=max(366, period * 3))
+        while len(dates) < period and cursor >= earliest_allowed:
+            if trading_session_checker(cursor):
+                dates.append(cursor)
+            cursor -= timedelta(days=1)
+        if len(dates) != period:
+            raise ValueError(f"Could not identify {period} NSE trading sessions before {through}.")
+        return sorted(dates)
+
+    @classmethod
+    def fetch_daily_market_closes(
+        cls,
+        universe: List[Dict[str, str]],
+        through: date,
+        period: int,
+        progress_callback: Optional[Callable] = None,
+        max_workers: int = MAX_CONCURRENT_REQUESTS,
+        bhavcopy_fetcher: Optional[Callable] = None,
+        trading_session_checker: Optional[Callable] = None,
+    ) -> tuple:
+        """Fetch one market-wide NSE bhavcopy for every requested session."""
+        if trading_session_checker is None:
+            trading_session_checker = cls.is_nse_trading_session
+
+        dates = cls.expected_trading_days(through, period, trading_session_checker)
+
+        symbols = {item["symbol"]: str(item.get("series") or "EQ").upper() for item in universe}
+        symbol_series = tuple(sorted(symbols.items()))
+
+        def fetch_one_day(session_date):
+            for attempt in range(2):
+                try:
+                    if bhavcopy_fetcher is None:
+                        prices = _fetch_bhavcopy_cached(session_date, symbol_series)
+                    else:
+                        daily = bhavcopy_fetcher(session_date)
+                        if daily is None or daily.empty:
+                            return session_date, {}, "NSE bhavcopy was empty"
+                        prices = cls._normalize_bhavcopy_day(daily, session_date, symbols)
+                    return session_date, prices, ""
+                except Exception as exc:
+                    if attempt == 1:
+                        return session_date, {}, str(exc)
+
+        daily_data = {}
+        worker_count = max(1, min(int(max_workers), max(1, len(dates))))
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = {executor.submit(fetch_one_day, trade_date): trade_date for trade_date in dates}
+            for completed, future in enumerate(as_completed(futures), start=1):
+                trade_date, closes, error = future.result()
+                daily_data[trade_date] = (closes, error)
+                if progress_callback:
+                    progress_callback(completed, len(dates), trade_date.strftime("%Y-%m-%d"))
+        return dates, daily_data
 
     @staticmethod
-    def calculate_bollinger(symbol: str, weekly_closes: Iterable[float], period: int = 55,
-                            multiplier: float = 1.0) -> Dict[str, Any]:
-        values = pd.Series(list(weekly_closes), dtype="float64").dropna()
+    def _normalize_bhavcopy_day(daily: pd.DataFrame, trade_date: date,
+                                requested_symbols: Dict[str, str]) -> Dict[str, float]:
+        """Normalize a whole exchange file with vectorized pandas operations."""
+        normalized_columns = {
+            DataNormalizer._clean_key(column): column for column in daily.columns
+        }
+
+        def find_column(aliases):
+            for alias in aliases:
+                column = normalized_columns.get(DataNormalizer._clean_key(alias))
+                if column is not None:
+                    return column
+            return None
+
+        symbol_col = find_column(DataNormalizer.SYMBOL_ALIASES)
+        date_col = find_column(DataNormalizer.DATE_ALIASES)
+        close_col = find_column(DataNormalizer.CLOSE_ALIASES)
+        series_col = find_column(DataNormalizer.SERIES_ALIASES)
+        if not symbol_col or not date_col or not close_col:
+            raise ValueError("NSE bhavcopy is missing a symbol, trading date, or close column")
+
+        symbols = daily[symbol_col].astype(str).str.strip().str.upper()
+        mask = symbols.isin(requested_symbols)
+        if series_col:
+            series = daily[series_col].fillna("").astype(str).str.strip().str.upper()
+            target_series = symbols.map(requested_symbols)
+            mask &= series.eq("") | series.eq(target_series)
+        traded_dates = pd.to_datetime(daily[date_col], errors="coerce").dt.date
+        mask &= traded_dates.eq(trade_date)
+        if not mask.any():
+            return {}
+
+        closes = pd.to_numeric(
+            daily.loc[mask, close_col].astype(str).str.replace(",", "", regex=False),
+            errors="coerce",
+        )
+        selected = pd.DataFrame({"symbol": symbols[mask], "close": closes}).dropna(subset=["close"])
+        selected = selected.drop_duplicates(subset=["symbol"], keep="first")
+        return {str(row.symbol): float(row.close) for row in selected.itertuples(index=False)}
+
+    @staticmethod
+    def calculate_bollinger(symbol: str, closes: Iterable[float], period: int = 385,
+                            multiplier: float = 3.7) -> Dict[str, Any]:
+        values = pd.Series(list(closes), dtype="float64").dropna()
         if period < 1 or multiplier < 0:
             raise ValueError("Period must be positive and multiplier cannot be negative.")
         if len(values) < period:
-            raise ValueError(f"Insufficient completed weekly closes: {len(values)} of {period}.")
+            raise ValueError(f"Insufficient completed daily closes: {len(values)} of {period}.")
         values = values.iloc[-period:]
         mean = float(values.mean())
         deviation = float(np.sqrt(((values - mean) ** 2).sum() / period))
@@ -103,7 +212,7 @@ class WeeklyBollingerService:
             "standard_deviation": deviation,
             "upper_band": mean + multiplier * deviation,
             "lower_band": mean - multiplier * deviation,
-            "weeks_used": len(values),
+            "observations_used": len(values),
         }
 
     @staticmethod
@@ -117,63 +226,67 @@ class WeeklyBollingerService:
     def calculate_universe(cls, universe: List[Dict[str, str]], period: int = DEFAULT_PERIOD,
                            multiplier: float = DEFAULT_MULTIPLIER,
                            as_of: Optional[date] = None,
-                           history_fetcher: Optional[Callable] = None,
                            progress_callback: Optional[Callable] = None,
+                           bhavcopy_fetcher: Optional[Callable] = None,
+                           trading_session_checker: Optional[Callable] = None,
                            max_workers: int = MAX_CONCURRENT_REQUESTS) -> Dict[str, Any]:
-        """Fetch histories concurrently; report per-symbol failures and progress."""
-        through = cls.latest_completed_week_end(as_of)
-        # Fetch the required calendar weeks plus two weeks of margin to ensure
-        # the first expected weekly candle is covered. Extra candles are not
-        # substituted for any missing week inside the calculation window.
-        start = through - timedelta(days=period * 7 + cls.HISTORY_BUFFER_DAYS)
-        fetch_history = history_fetcher or NSEClient.get_stock_historical_data
-
-        def calculate_one(stock):
-            symbol = stock["symbol"]
-            try:
-                daily = fetch_history(symbol, start, through)
-                weekly = cls.weekly_closes_from_daily(daily, through)
-                aligned = cls.align_completed_weeks(weekly, through, period)
-                valid_count = int(aligned.notna().sum())
-                if valid_count != period:
-                    missing = [stamp.strftime("%Y-%m-%d") for stamp in aligned[aligned.isna()].index]
-                    raise ValueError(
-                        f"Only {valid_count} of {period} aligned completed weekly closes are valid; "
-                        f"missing week labels: {', '.join(missing)}"
-                    )
-                row = cls.calculate_bollinger(symbol, aligned.tolist(), period, multiplier)
-                row["company_name"] = stock.get("company_name", symbol)
-                row["week_labels"] = [stamp.strftime("%Y-%m-%d") for stamp in aligned.index]
-                row["weekly_closes"] = [float(value) for value in aligned.tolist()]
-                return row, None
-            except Exception as exc:
-                return None, {"symbol": symbol, "company_name": stock.get("company_name", symbol),
-                              "reason": str(exc)}
-
+        """Calculate bands from the same exact window of NSE trading sessions."""
+        if period < 1:
+            raise ValueError("Period must be positive.")
+        through = cls.latest_completed_trade_date(as_of, trading_session_checker)
+        dates, daily_market_data = cls.fetch_daily_market_closes(
+            universe, through, period, progress_callback, max_workers,
+            bhavcopy_fetcher=bhavcopy_fetcher,
+            trading_session_checker=trading_session_checker,
+        )
         results, unavailable = [], []
-        if universe:
-            worker_count = max(1, min(int(max_workers), len(universe)))
-            with ThreadPoolExecutor(max_workers=worker_count) as executor:
-                futures = {executor.submit(calculate_one, stock): stock for stock in universe}
-                for completed, future in enumerate(as_completed(futures), start=1):
-                    row, failure = future.result()
-                    if row:
-                        results.append(row)
-                    if failure:
-                        unavailable.append(failure)
-                    if progress_callback:
-                        progress_callback(completed, len(universe), futures[future]["symbol"])
-        return {"results": cls.sort_results(results), "unavailable": unavailable,
-                "latest_week_end": through, "universe_count": len(universe),
-                "period": period, "multiplier": multiplier,
-                "history_start_date": start,
-                "history_buffer_days": cls.HISTORY_BUFFER_DAYS}
+        global_errors = [
+            f"{trade_date:%Y-%m-%d}: {daily_market_data[trade_date][1]}"
+            for trade_date in dates if daily_market_data[trade_date][1]
+        ]
+        for stock in universe:
+            symbol = stock["symbol"]
+            values = [daily_market_data[trade_date][0].get(symbol, np.nan) for trade_date in dates]
+            aligned = pd.Series(values, index=dates, dtype="float64")
+            if aligned.notna().sum() != period:
+                missing_dates = [
+                    stamp.strftime("%Y-%m-%d")
+                    for stamp in aligned[aligned.isna()].index
+                ]
+                reason = (
+                    f"Only {int(aligned.notna().sum())} of {period} daily trading-session closes are valid; "
+                    f"missing dates: {', '.join(missing_dates)}"
+                )
+                if global_errors:
+                    reason += ". NSE file errors: " + "; ".join(global_errors)
+                unavailable.append({
+                    "symbol": symbol,
+                    "company_name": stock.get("company_name", symbol),
+                    "reason": reason,
+                })
+                continue
+            row = cls.calculate_bollinger(symbol, aligned.tolist(), period, multiplier)
+            row["company_name"] = stock.get("company_name", symbol)
+            row["price_dates"] = [stamp.strftime("%Y-%m-%d") for stamp in aligned.index]
+            row["daily_closes"] = [float(value) for value in aligned.tolist()]
+            results.append(row)
+
+        return {
+            "results": cls.sort_results(results),
+            "unavailable": unavailable,
+            "latest_trade_date": through,
+            "universe_count": len(universe),
+            "period": period,
+            "multiplier": multiplier,
+            "history_start_date": dates[0],
+            "price_data_source": "NSE market-wide daily bhavcopy",
+        }
 
     @staticmethod
     def build_excel_report(report: Dict[str, Any]) -> Dict[str, Any]:
         workbook = Workbook()
         sheet = workbook.active
-        sheet.title = "Weekly Bollinger Ranking"
+        sheet.title = "Daily Bollinger Ranking"
         sheet.append(["Rank", "Stock Symbol", "Latest Closing Price", "Middle Band",
                       "Standard Deviation", "Upper Band", "Lower Band"])
         for item in report["results"]:
@@ -183,22 +296,22 @@ class WeeklyBollingerService:
         missing.append(["Stock Symbol", "Company Name", "Reason"])
         for item in report["unavailable"]:
             missing.append([item["symbol"], item["company_name"], item["reason"]])
-        history = workbook.create_sheet("Weekly Closes")
+        history = workbook.create_sheet("Daily Closes")
         ranked_results = report["results"]
         symbols = [item["symbol"] for item in ranked_results]
-        history.append(["Week Ending"] + symbols)
+        history.append(["Trading Date"] + symbols)
         if ranked_results:
-            labels = ranked_results[0]["week_labels"]
-            for week_index, label in enumerate(labels):
-                history.append([label] + [item["weekly_closes"][week_index] for item in ranked_results])
+            labels = ranked_results[0]["price_dates"]
+            for day_index, label in enumerate(labels):
+                history.append([label] + [item["daily_closes"][day_index] for item in ranked_results])
         notes = workbook.create_sheet("Run Details")
         notes.append(["Setting", "Value"])
-        for row in (("Latest completed weekly candle", report["latest_week_end"].isoformat()),
+        for row in (("Latest completed trading session", report["latest_trade_date"].isoformat()),
                     ("Universe source", "data/ind_niftytotalmarket_list.xlsx"),
-                    ("Daily history request starts", report["history_start_date"].isoformat()),
-                    ("History buffer (calendar days)", report["history_buffer_days"]),
-                    ("Weekly close construction", "Last NSE trading-day close in each Monday-Sunday week"),
-                    ("Weeks per calculation", report["period"]),
+                    ("Earliest trading session in calculation", report["history_start_date"].isoformat()),
+                    ("Price data source", report["price_data_source"]),
+                    ("Close construction", "Daily NSE close for each session; missing stock sessions are not forward-filled"),
+                    ("Trading sessions per calculation", report["period"]),
                     ("Population variance divisor", report["period"]),
                     ("Standard deviation multiplier", report["multiplier"]),
                     ("Universe stocks", report["universe_count"]),
@@ -225,5 +338,5 @@ class WeeklyBollingerService:
                 cell.number_format = "0.00"
         buffer = BytesIO()
         workbook.save(buffer)
-        filename = f"NIFTY750_Weekly_Bollinger_{report['latest_week_end']:%Y%m%d}.xlsx"
+        filename = f"NIFTY750_Daily_Bollinger_{report['latest_trade_date']:%Y%m%d}.xlsx"
         return {"data": buffer.getvalue(), "filename": filename}
