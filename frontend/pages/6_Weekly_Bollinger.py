@@ -1,5 +1,4 @@
 import sys
-from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -7,77 +6,50 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
-from app.services.weekly_bollinger_service import WeeklyBollingerService
+from frontend.utils.weekly_bollinger_report import get_weekly_bollinger_report
 
-with st.sidebar:
-    st.markdown("## NIFTY 750")
-    st.caption("Weekly Bollinger Band strategy")
-    if st.button("← Choose project", width="stretch"):
-        st.session_state["selected_project"] = "home"
-        st.rerun()
 
-st.title("NIFTY 750 Weekly Bollinger Bands")
+st.title("NIFTY 750 Bollinger Dashboard")
 st.caption(
-    "Uses the supplied data/ind_niftytotalmarket_list.xlsx universe. Weekly candles are built "
-    "from the final NSE trading-day close in each Monday–Sunday week. The current "
-    "incomplete week is excluded; population standard deviation is used. The calculation "
-    "uses exactly 55 consecutive completed weekly closes (about 385 calendar days), "
-    "with a six-week history buffer for holidays and missing records."
+    "55 completed weekly closes per stock, built from the final NSE trading-day close "
+    "in each week. The current incomplete week is excluded; bands use population standard deviation."
 )
-
-period_col, multiplier_col = st.columns(2)
-with period_col:
-    period = st.number_input("Completed weeks", min_value=2, max_value=260, value=55, step=1)
-with multiplier_col:
-    multiplier = st.number_input("Standard deviation multiplier", min_value=0.0, value=1.0,
-                                 max_value=10.0, step=0.5)
-
-if st.button("Refresh NIFTY 750 calculation", type="primary"):
-    st.session_state.pop("weekly_bollinger_report", None)
-    try:
-        with st.spinner("Fetching the live universe and calculating weekly prices. This may take several minutes..."):
-            universe = WeeklyBollingerService.fetch_stock_universe()
-            report = WeeklyBollingerService.calculate_universe(
-                universe, period=int(period), multiplier=float(multiplier), as_of=date.today()
-            )
-            report["company_names"] = {item["symbol"]: item.get("company_name", item["symbol"])
-                                       for item in universe}
-            report["excel"] = WeeklyBollingerService.build_excel_report(report)
-        st.session_state["weekly_bollinger_report"] = report
-    except Exception as exc:
-        st.error(f"Unable to generate the NIFTY 750 report: {exc}")
-
-report = st.session_state.get("weekly_bollinger_report")
-if report:
-    st.success(
-        f"Latest completed weekly candle: {report['latest_week_end']:%d %b %Y} · "
-        f"{len(report['results'])} eligible · {len(report['unavailable'])} unavailable · "
-        f"{report['universe_count']} constituents"
+report = get_weekly_bollinger_report()
+if not report:
+    st.info("Use **Refresh NIFTY 750 data** in the sidebar to load the latest dashboard snapshot.")
+else:
+    results = report["results"]
+    eligible = len(results)
+    unavailable = len(report["unavailable"])
+    metric_cols = st.columns(4)
+    metric_cols[0].metric("Universe symbols", report["universe_count"])
+    metric_cols[1].metric("Eligible stocks", eligible)
+    metric_cols[2].metric("Unavailable / insufficient", unavailable)
+    metric_cols[3].metric("Latest completed week", report["latest_week_end"].strftime("%d %b %Y"))
+    st.caption(
+        f"Snapshot settings: {report['period']} weeks · {report['multiplier']:g}σ · "
+        f"{report['history_start_date']:%d %b %Y} history start"
     )
-    st.download_button(
-        "Download Excel workbook", data=report["excel"]["data"],
-        file_name=report["excel"]["filename"],
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        type="primary",
-    )
-    st.subheader("Ranked stocks")
-    if report["results"]:
-        frame = pd.DataFrame(report["results"]).rename(columns={
-            "rank": "Rank", "symbol": "Stock Symbol", "latest_close": "Latest Closing Price",
-            "middle_band": "Middle Band", "standard_deviation": "Standard Deviation",
-            "upper_band": "Upper Band", "lower_band": "Lower Band",
-        })[["Rank", "Stock Symbol", "Latest Closing Price", "Middle Band",
-           "Standard Deviation", "Upper Band", "Lower Band"]]
-        st.dataframe(frame, hide_index=True, width="stretch", column_config={
+
+    if results:
+        st.subheader("Highest Upper Bands")
+        top = pd.DataFrame(results[:15])
+        chart = px.bar(top.sort_values("upper_band"), x="upper_band", y="symbol", orientation="h",
+                       labels={"upper_band": "Upper Band", "symbol": "Stock Symbol"},
+                       color="upper_band", color_continuous_scale="Blues")
+        chart.update_layout(showlegend=False, coloraxis_showscale=False, height=520,
+                            yaxis_title=None, xaxis_title="Upper Band")
+        st.plotly_chart(chart, width="stretch")
+        st.dataframe(pd.DataFrame([{
+            "Rank": row["rank"], "Stock Symbol": row["symbol"],
+            "Latest Closing Price": row["latest_close"], "Middle Band": row["middle_band"],
+            "Upper Band": row["upper_band"], "Lower Band": row["lower_band"],
+        } for row in results[:10]]), hide_index=True, width="stretch", column_config={
             name: st.column_config.NumberColumn(format="%.2f") for name in
-            ["Latest Closing Price", "Middle Band", "Standard Deviation", "Upper Band", "Lower Band"]
+            ["Latest Closing Price", "Middle Band", "Upper Band", "Lower Band"]
         })
     else:
-        st.warning("No stocks had enough valid weekly history to calculate bands.")
-    if report["unavailable"]:
-        st.subheader("Stocks with unavailable or insufficient history")
-        st.dataframe(pd.DataFrame(report["unavailable"]).rename(columns={
-            "symbol": "Stock Symbol", "company_name": "Company Name", "reason": "Reason",
-        }), hide_index=True, width="stretch")
+        st.warning("No stocks currently have all required weekly closes.")

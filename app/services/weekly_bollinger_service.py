@@ -136,6 +136,8 @@ class WeeklyBollingerService:
                     )
                 row = cls.calculate_bollinger(symbol, aligned.tolist(), period, multiplier)
                 row["company_name"] = stock.get("company_name", symbol)
+                row["week_labels"] = [stamp.strftime("%Y-%m-%d") for stamp in aligned.index]
+                row["weekly_closes"] = [float(value) for value in aligned.tolist()]
                 results.append(row)
             except Exception as exc:
                 unavailable.append({"symbol": symbol, "company_name": stock.get("company_name", symbol),
@@ -159,6 +161,14 @@ class WeeklyBollingerService:
         missing.append(["Stock Symbol", "Company Name", "Reason"])
         for item in report["unavailable"]:
             missing.append([item["symbol"], item["company_name"], item["reason"]])
+        history = workbook.create_sheet("Weekly Closes")
+        ranked_results = report["results"]
+        symbols = [item["symbol"] for item in ranked_results]
+        history.append(["Week Ending"] + symbols)
+        if ranked_results:
+            labels = ranked_results[0]["week_labels"]
+            for week_index, label in enumerate(labels):
+                history.append([label] + [item["weekly_closes"][week_index] for item in ranked_results])
         notes = workbook.create_sheet("Run Details")
         notes.append(["Setting", "Value"])
         for row in (("Latest completed weekly candle", report["latest_week_end"].isoformat()),
@@ -185,6 +195,9 @@ class WeeklyBollingerService:
                 ws.column_dimensions[column[0].column_letter].width = min(
                     max(max(len(str(cell.value or "")) for cell in column) + 2, 12), 60)
         for row in sheet.iter_rows(min_row=2, min_col=3, max_col=7):
+            for cell in row:
+                cell.number_format = "0.00"
+        for row in history.iter_rows(min_row=2, min_col=2):
             for cell in row:
                 cell.number_format = "0.00"
         buffer = BytesIO()
