@@ -25,7 +25,7 @@ from app.utils.nse_trading_calendar import NSE_HOLIDAYS, NSE_SPECIAL_SESSIONS
 def _fetch_bhavcopy_cached(trade_date: date, symbol_series: tuple) -> Dict[str, float]:
     """Cache selected closes in memory and on disk to accelerate future refreshes."""
     universe_key = hashlib.sha256(
-        json.dumps(symbol_series, separators=(",", ":")).encode("utf-8")
+        json.dumps((2, symbol_series), separators=(",", ":")).encode("utf-8")
     ).hexdigest()
     cache_path = WeeklyBollingerService.BHAVCOPY_CACHE_FILE
     try:
@@ -236,10 +236,16 @@ class WeeklyBollingerService:
 
         symbols = daily[symbol_col].astype(str).str.strip().str.upper()
         mask = symbols.isin(requested_symbols)
+        target_series = symbols.map(requested_symbols)
+        series = None
         if series_col:
             series = daily[series_col].fillna("").astype(str).str.strip().str.upper()
-            target_series = symbols.map(requested_symbols)
-            mask &= series.eq("") | series.eq(target_series)
+            exact_series = series.eq(target_series)
+            # NSE can move fully paid EQ shares into BE/BZ trade-to-trade
+            # settlement. Those are still valid equity closes for the same
+            # symbol and should be included in its price history.
+            equity_trade_to_trade = target_series.eq("EQ") & series.isin({"BE", "BZ"})
+            mask &= series.eq("") | exact_series | equity_trade_to_trade
         traded_dates = pd.to_datetime(daily[date_col], errors="coerce").dt.date
         mask &= traded_dates.eq(trade_date)
         if not mask.any():
@@ -249,7 +255,12 @@ class WeeklyBollingerService:
             daily.loc[mask, close_col].astype(str).str.replace(",", "", regex=False),
             errors="coerce",
         )
-        selected = pd.DataFrame({"symbol": symbols[mask], "close": closes}).dropna(subset=["close"])
+        selected_data = {"symbol": symbols[mask], "close": closes}
+        if series is not None:
+            selected_data["exact_series"] = series[mask].eq(target_series[mask])
+        selected = pd.DataFrame(selected_data).dropna(subset=["close"])
+        if "exact_series" in selected:
+            selected = selected.sort_values("exact_series", ascending=False)
         selected = selected.drop_duplicates(subset=["symbol"], keep="first")
         return {str(row.symbol): float(row.close) for row in selected.itertuples(index=False)}
 
