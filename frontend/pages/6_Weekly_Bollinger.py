@@ -15,7 +15,8 @@ from frontend.utils.weekly_bollinger_report import get_weekly_bollinger_report
 st.title("NIFTY 750 Bollinger Dashboard")
 st.caption(
     "55 completed weekly closes per stock, built from the final NSE trading-day close "
-    "in each week. The current incomplete week is excluded; bands use population standard deviation."
+    "in each week. The current incomplete week is excluded; bands use population standard deviation. "
+    "Default bands are Middle Band ± 3.7 × Standard Deviation; the multiplier is configurable."
 )
 report = get_weekly_bollinger_report()
 if not report:

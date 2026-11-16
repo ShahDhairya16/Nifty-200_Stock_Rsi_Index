@@ -25,7 +25,7 @@ class WeeklyBollingerService:
 
     UNIVERSE_FILE = Path(__file__).resolve().parents[2] / "data" / "ind_niftytotalmarket_list.xlsx"
     DEFAULT_PERIOD = 55
-    DEFAULT_MULTIPLIER = 1.0
+    DEFAULT_MULTIPLIER = 3.7
     MAX_CONCURRENT_REQUESTS = 8
     HISTORY_BUFFER_DAYS = 14
 
