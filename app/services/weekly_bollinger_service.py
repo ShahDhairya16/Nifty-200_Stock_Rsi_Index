@@ -1,11 +1,15 @@
 """Daily Bollinger calculations for the supplied NIFTY Total Market universe."""
 from datetime import date, datetime, time, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import closing
 from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional
 from zoneinfo import ZoneInfo
+import hashlib
+import json
+import sqlite3
 
 import numpy as np
 import pandas as pd
@@ -19,13 +23,53 @@ from app.utils.nse_trading_calendar import NSE_HOLIDAYS, NSE_SPECIAL_SESSIONS
 
 @lru_cache(maxsize=400)
 def _fetch_bhavcopy_cached(trade_date: date, symbol_series: tuple) -> Dict[str, float]:
-    """Cache only the selected universe's closes, not full market-wide files."""
+    """Cache selected closes in memory and on disk to accelerate future refreshes."""
+    universe_key = hashlib.sha256(
+        json.dumps(symbol_series, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    cache_path = WeeklyBollingerService.BHAVCOPY_CACHE_FILE
+    try:
+        with closing(sqlite3.connect(cache_path, timeout=30)) as connection:
+            with connection:
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS daily_closes ("
+                    "trade_date TEXT NOT NULL, universe_key TEXT NOT NULL, "
+                    "closes_json TEXT NOT NULL, PRIMARY KEY (trade_date, universe_key))"
+                )
+                cached = connection.execute(
+                    "SELECT closes_json FROM daily_closes WHERE trade_date=? AND universe_key=?",
+                    (trade_date.isoformat(), universe_key),
+                ).fetchone()
+        if cached:
+            return {symbol: float(close) for symbol, close in json.loads(cached[0]).items()}
+    except (OSError, sqlite3.Error, json.JSONDecodeError):
+        # Read-only or unavailable local storage should not prevent a live fetch.
+        pass
+
     frame = capital_market.bhav_copy_equities(trade_date.strftime("%d-%m-%Y"))
     if frame is None or frame.empty:
         raise ValueError("NSE bhavcopy was empty")
-    return WeeklyBollingerService._normalize_bhavcopy_day(
+    closes = WeeklyBollingerService._normalize_bhavcopy_day(
         frame, trade_date, dict(symbol_series)
     )
+    try:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        with closing(sqlite3.connect(cache_path, timeout=30)) as connection:
+            with connection:
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS daily_closes ("
+                    "trade_date TEXT NOT NULL, universe_key TEXT NOT NULL, "
+                    "closes_json TEXT NOT NULL, PRIMARY KEY (trade_date, universe_key))"
+                )
+                connection.execute(
+                    "INSERT OR REPLACE INTO daily_closes "
+                    "(trade_date, universe_key, closes_json) VALUES (?, ?, ?)",
+                    (trade_date.isoformat(), universe_key, json.dumps(closes, separators=(",", ":"))),
+                )
+    except (OSError, sqlite3.Error, TypeError, ValueError):
+        # The live result is still usable when persistent caching is unavailable.
+        pass
+    return closes
 
 
 class WeeklyBollingerService:
@@ -37,9 +81,12 @@ class WeeklyBollingerService:
     """
 
     UNIVERSE_FILE = Path(__file__).resolve().parents[2] / "data" / "ind_niftytotalmarket_list.xlsx"
+    BHAVCOPY_CACHE_FILE = Path(__file__).resolve().parents[2] / "data" / "nifty750_bhavcopy_cache.sqlite3"
     DEFAULT_PERIOD = 385
     DEFAULT_MULTIPLIER = 3.7
-    MAX_CONCURRENT_REQUESTS = 8
+    # A bounded pool speeds up the cold fetch while keeping NSE request bursts
+    # well below the requested 50–100 connection range that can trigger throttling.
+    MAX_CONCURRENT_REQUESTS = 24
 
     @classmethod
     def fetch_stock_universe(cls) -> List[Dict[str, str]]:
