@@ -17,11 +17,11 @@ def _cached_history(symbol: str, start_date: date, end_date: date):
 
 
 def refresh_weekly_bollinger_report(period: int, multiplier: float,
-                                    progress_callback=None) -> None:
+                                    progress_callback=None, as_of: date = None) -> None:
     """Fetch, calculate, and cache one report for all NIFTY 750 pages in session."""
     universe = WeeklyBollingerService.fetch_stock_universe()
     report = WeeklyBollingerService.calculate_universe(
-        universe, period=period, multiplier=multiplier, as_of=date.today(),
+        universe, period=period, multiplier=multiplier, as_of=as_of or date.today(),
         history_fetcher=_cached_history, progress_callback=progress_callback,
     )
     report["excel"] = WeeklyBollingerService.build_excel_report(report)

@@ -9,18 +9,45 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from frontend.utils.weekly_bollinger_report import get_weekly_bollinger_report
+from app.services.weekly_bollinger_service import WeeklyBollingerService
+from frontend.utils.weekly_bollinger_report import (
+    get_weekly_bollinger_report,
+    refresh_weekly_bollinger_report,
+)
 
 
 st.title("NIFTY 750 Bollinger Dashboard")
 st.caption(
     "55 completed weekly closes per stock, built from the final NSE trading-day close "
     "in each week. The current incomplete week is excluded; bands use population standard deviation. "
-    "Default bands are Middle Band ± 3.7 × Standard Deviation; the multiplier is configurable."
+    "Bands use Middle Band ± 3.7 × Standard Deviation."
 )
 report = get_weekly_bollinger_report()
 if not report:
-    st.info("Use **Refresh NIFTY 750 data** in the sidebar to load the latest dashboard snapshot.")
+    with st.container(border=True):
+        st.subheader("Load the latest dashboard snapshot")
+        st.caption("The first refresh fetches weekly price history for the supplied stock universe.")
+        if st.button("Load NIFTY 750 Dashboard", type="primary"):
+            progress = st.progress(0, text="Starting NIFTY 750 data refresh…")
+
+            def update_progress(completed, total, symbol):
+                interval = max(1, total // 100)
+                if completed == total or completed % interval == 0:
+                    progress.progress(
+                        completed / total,
+                        text=f"Fetched {completed} of {total} symbols · latest: {symbol}",
+                    )
+
+            try:
+                with st.spinner("Fetching and calculating the latest weekly snapshot…"):
+                    refresh_weekly_bollinger_report(
+                        int(st.session_state.get("bollinger_period", 55)),
+                        WeeklyBollingerService.DEFAULT_MULTIPLIER,
+                        progress_callback=update_progress,
+                    )
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Dashboard refresh failed: {exc}")
 else:
     results = report["results"]
     eligible = len(results)
