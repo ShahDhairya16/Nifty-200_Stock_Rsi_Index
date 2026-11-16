@@ -31,6 +31,9 @@ def _load_bundled_data():
 def render_sidebar():
     apply_theme()
     with st.sidebar:
+        if st.button("← Choose project", width="stretch"):
+            st.session_state["selected_project"] = "home"
+            st.rerun()
         st.markdown("## NIFTY 200")
         st.caption("RSI analytics workspace · list auto-syncs daily")
         st.divider()
