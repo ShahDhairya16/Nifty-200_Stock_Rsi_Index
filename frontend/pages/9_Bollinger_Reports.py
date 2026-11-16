@@ -30,7 +30,8 @@ report_end_date = st.date_input(
     "Report end date",
     value=market_today,
     max_value=market_today,
-    help="Uses the selected NIFTY 200-style report end date. For today, the close is included after 15:30 IST.",
+    help=("Uses one shared report end date for all stocks. For today, the close is included after 15:30 IST; "
+          "if the newest NSE file is unavailable, the whole report falls back to the latest available session."),
 )
 target_trade_date = WeeklyBollingerService.latest_completed_trade_date(report_end_date)
 
@@ -79,7 +80,7 @@ if st.button("Generate Excel Report", type="primary"):
         st.error(f"Report generation failed: {exc}")
 
 generated = st.session_state.get("nifty750_daily_generated_report_v2")
-if (generated and generated["trade_date"] == target_trade_date
+if (generated and generated["trade_date"] <= target_trade_date
         and generated["period"] == period
         and abs(generated["multiplier"] - multiplier) < 1e-9):
     st.download_button(

@@ -41,7 +41,11 @@ def _fetch_bhavcopy_cached(trade_date: date, symbol_series: tuple) -> Dict[str, 
                     (trade_date.isoformat(), universe_key),
                 ).fetchone()
         if cached:
-            return {symbol: float(close) for symbol, close in json.loads(cached[0]).items()}
+            cached_prices = {
+                symbol: float(close) for symbol, close in json.loads(cached[0]).items()
+            }
+            if cached_prices:
+                return cached_prices
     except (OSError, sqlite3.Error, json.JSONDecodeError):
         # Read-only or unavailable local storage should not prevent a live fetch.
         pass
@@ -52,6 +56,8 @@ def _fetch_bhavcopy_cached(trade_date: date, symbol_series: tuple) -> Dict[str, 
     closes = WeeklyBollingerService._normalize_bhavcopy_day(
         frame, trade_date, dict(symbol_series)
     )
+    if not closes:
+        raise ValueError("NSE bhavcopy contained no requested-universe equity closes")
     try:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         with closing(sqlite3.connect(cache_path, timeout=30)) as connection:
@@ -87,6 +93,7 @@ class WeeklyBollingerService:
     # A bounded pool speeds up the cold fetch while keeping NSE request bursts
     # well below the requested 50–100 connection range that can trigger throttling.
     MAX_CONCURRENT_REQUESTS = 24
+    MAX_LATEST_DATE_FALLBACK_SESSIONS = 10
 
     @classmethod
     def fetch_stock_universe(cls) -> List[Dict[str, str]]:
@@ -196,6 +203,8 @@ class WeeklyBollingerService:
                         if daily is None or daily.empty:
                             return session_date, {}, "NSE bhavcopy was empty"
                         prices = cls._normalize_bhavcopy_day(daily, session_date, symbols)
+                    if not prices:
+                        raise ValueError("NSE bhavcopy contained no requested-universe equity closes")
                     return session_date, prices, ""
                 except Exception as exc:
                     if attempt == 1:
@@ -304,11 +313,19 @@ class WeeklyBollingerService:
         if period < 1:
             raise ValueError("Period must be positive.")
         through = cls.latest_completed_trade_date(as_of, trading_session_checker)
-        dates, daily_market_data = cls.fetch_daily_market_closes(
-            universe, through, period, progress_callback, max_workers,
-            bhavcopy_fetcher=bhavcopy_fetcher,
-            trading_session_checker=trading_session_checker,
-        )
+        for fallback_count in range(cls.MAX_LATEST_DATE_FALLBACK_SESSIONS + 1):
+            dates, daily_market_data = cls.fetch_daily_market_closes(
+                universe, through, period, progress_callback, max_workers,
+                bhavcopy_fetcher=bhavcopy_fetcher,
+                trading_session_checker=trading_session_checker,
+            )
+            newest_session_error = daily_market_data[dates[-1]][1]
+            if not newest_session_error or fallback_count == cls.MAX_LATEST_DATE_FALLBACK_SESSIONS:
+                break
+            # Use one common, fully available market-file endpoint for every
+            # stock. A missing newest bhavcopy should move the whole window back,
+            # not mark every constituent as missing that date.
+            through = dates[-1] - timedelta(days=1)
         results, unavailable = [], []
         global_errors = [
             f"{trade_date:%Y-%m-%d}: {daily_market_data[trade_date][1]}"
@@ -344,7 +361,7 @@ class WeeklyBollingerService:
         return {
             "results": cls.sort_results(results),
             "unavailable": unavailable,
-            "latest_trade_date": through,
+            "latest_trade_date": dates[-1],
             "universe_count": len(universe),
             "period": period,
             "multiplier": multiplier,
