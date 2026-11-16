@@ -6,12 +6,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import streamlit as st
-from frontend.components.ai_panel import render_ai_recommendations
+from frontend.components.ai_panel import render_ai_recommendations_on_demand
 from frontend.components.charts import rsi_distribution
 from frontend.components.metrics import metric_row
 from frontend.components.sidebar import render_sidebar
 from frontend.components.tables import ranking_table
-from frontend.utils.ai_loader import get_auto_recommendations
 from frontend.utils.data_loader import get_dashboard_summary, get_rsi_ranking
 from frontend.utils.formatters import format_date, format_number
 
@@ -31,10 +30,7 @@ try:
         ("Average Market RSI", format_number(summary["market_average"])),
     ])
     st.divider()
-    st.subheader("AI purchase ideas")
-    with st.spinner("Gemini is screening the latest RSI snapshot..."):
-        ai_result = get_auto_recommendations()
-    render_ai_recommendations(ai_result, limit=5)
+    render_ai_recommendations_on_demand("dashboard", limit=5)
     st.divider()
     left, right = st.columns(2)
     with left:

@@ -81,8 +81,21 @@ elif project == "nifty750":
                                      key="bollinger_multiplier")
         if st.button("Refresh NIFTY 750 data", type="primary", width="stretch"):
             try:
+                progress = st.progress(0, text="Starting NIFTY 750 data refresh…")
+
+                def update_progress(completed, total, symbol):
+                    update_interval = max(1, total // 100)
+                    if completed == total or completed % update_interval == 0:
+                        progress.progress(
+                            completed / total,
+                            text=f"Fetched {completed} of {total} symbols · latest: {symbol}",
+                        )
+
                 with st.spinner("Fetching weekly history for the NIFTY 750 universe…"):
-                    refresh_weekly_bollinger_report(int(period), float(multiplier))
+                    refresh_weekly_bollinger_report(
+                        int(period), float(multiplier), progress_callback=update_progress
+                    )
+                progress.empty()
                 st.success("Bollinger report refreshed.")
             except Exception as exc:
                 st.error(f"Refresh failed: {exc}")

@@ -1,8 +1,9 @@
 """Weekly Bollinger ranking for the NIFTY Total Market (750-stock) universe."""
 from datetime import date, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -25,6 +26,8 @@ class WeeklyBollingerService:
     UNIVERSE_FILE = Path(__file__).resolve().parents[2] / "data" / "ind_niftytotalmarket_list.xlsx"
     DEFAULT_PERIOD = 55
     DEFAULT_MULTIPLIER = 1.0
+    MAX_CONCURRENT_REQUESTS = 8
+    HISTORY_BUFFER_DAYS = 14
 
     @classmethod
     def fetch_stock_universe(cls) -> List[Dict[str, str]]:
@@ -113,18 +116,22 @@ class WeeklyBollingerService:
     @classmethod
     def calculate_universe(cls, universe: List[Dict[str, str]], period: int = DEFAULT_PERIOD,
                            multiplier: float = DEFAULT_MULTIPLIER,
-                           as_of: Optional[date] = None) -> Dict[str, Any]:
-        """Fetch histories independently; report failures without losing rows."""
+                           as_of: Optional[date] = None,
+                           history_fetcher: Optional[Callable] = None,
+                           progress_callback: Optional[Callable] = None,
+                           max_workers: int = MAX_CONCURRENT_REQUESTS) -> Dict[str, Any]:
+        """Fetch histories concurrently; report per-symbol failures and progress."""
         through = cls.latest_completed_week_end(as_of)
-        # Fetch roughly period * 7 calendar days plus six weeks of safety
-        # margin for exchange holidays, late listings, and occasional missing
-        # records. The calculation itself still uses exactly `period` weeks.
-        start = through - timedelta(days=period * 7 + 42)
-        results, unavailable = [], []
-        for stock in universe:
+        # Fetch the required calendar weeks plus two weeks of margin to ensure
+        # the first expected weekly candle is covered. Extra candles are not
+        # substituted for any missing week inside the calculation window.
+        start = through - timedelta(days=period * 7 + cls.HISTORY_BUFFER_DAYS)
+        fetch_history = history_fetcher or NSEClient.get_stock_historical_data
+
+        def calculate_one(stock):
             symbol = stock["symbol"]
             try:
-                daily = NSEClient.get_stock_historical_data(symbol, start, through)
+                daily = fetch_history(symbol, start, through)
                 weekly = cls.weekly_closes_from_daily(daily, through)
                 aligned = cls.align_completed_weeks(weekly, through, period)
                 valid_count = int(aligned.notna().sum())
@@ -138,14 +145,29 @@ class WeeklyBollingerService:
                 row["company_name"] = stock.get("company_name", symbol)
                 row["week_labels"] = [stamp.strftime("%Y-%m-%d") for stamp in aligned.index]
                 row["weekly_closes"] = [float(value) for value in aligned.tolist()]
-                results.append(row)
+                return row, None
             except Exception as exc:
-                unavailable.append({"symbol": symbol, "company_name": stock.get("company_name", symbol),
-                                    "reason": str(exc)})
+                return None, {"symbol": symbol, "company_name": stock.get("company_name", symbol),
+                              "reason": str(exc)}
+
+        results, unavailable = [], []
+        if universe:
+            worker_count = max(1, min(int(max_workers), len(universe)))
+            with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                futures = {executor.submit(calculate_one, stock): stock for stock in universe}
+                for completed, future in enumerate(as_completed(futures), start=1):
+                    row, failure = future.result()
+                    if row:
+                        results.append(row)
+                    if failure:
+                        unavailable.append(failure)
+                    if progress_callback:
+                        progress_callback(completed, len(universe), futures[future]["symbol"])
         return {"results": cls.sort_results(results), "unavailable": unavailable,
                 "latest_week_end": through, "universe_count": len(universe),
                 "period": period, "multiplier": multiplier,
-                "history_start_date": start}
+                "history_start_date": start,
+                "history_buffer_days": cls.HISTORY_BUFFER_DAYS}
 
     @staticmethod
     def build_excel_report(report: Dict[str, Any]) -> Dict[str, Any]:
@@ -174,6 +196,7 @@ class WeeklyBollingerService:
         for row in (("Latest completed weekly candle", report["latest_week_end"].isoformat()),
                     ("Universe source", "data/ind_niftytotalmarket_list.xlsx"),
                     ("Daily history request starts", report["history_start_date"].isoformat()),
+                    ("History buffer (calendar days)", report["history_buffer_days"]),
                     ("Weekly close construction", "Last NSE trading-day close in each Monday-Sunday week"),
                     ("Weeks per calculation", report["period"]),
                     ("Population variance divisor", report["period"]),

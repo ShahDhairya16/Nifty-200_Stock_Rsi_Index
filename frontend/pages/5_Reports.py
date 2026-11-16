@@ -13,9 +13,8 @@ if str(ROOT) not in sys.path:
 
 from datetime import date
 import streamlit as st
-from frontend.components.ai_panel import render_ai_recommendations
+from frontend.components.ai_panel import render_ai_recommendations_on_demand
 from frontend.components.sidebar import render_sidebar
-from frontend.utils.ai_loader import get_auto_recommendations
 from app.database import repositories as repositories_module
 from app.services import data_normalizer as data_normalizer_module
 from app.services import excel_report_service as excel_report_module
@@ -38,11 +37,7 @@ st.caption(
     "Both sheets use the auto-synced NIFTY 200 constituent list in data/stocks.json."
 )
 
-with st.container(border=True):
-    st.subheader("AI purchase ideas")
-    with st.spinner("Gemini is screening the latest RSI snapshot..."):
-        ai_result = get_auto_recommendations()
-    render_ai_recommendations(ai_result, limit=5, show_summary=False)
+render_ai_recommendations_on_demand("reports", limit=5, show_summary=False)
 
 # Streamlit can preserve session_state across source updates. Discard reports
 # created before this report implementation or against a different universe.
