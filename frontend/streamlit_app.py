@@ -54,6 +54,8 @@ elif project == "nifty200":
         ]
     }, position="sidebar", expanded=True)
 elif project == "nifty750":
+    from app.services.weekly_bollinger_service import WeeklyBollingerService
+
     navigation = st.navigation({
         "NIFTY 750 Bollinger": [
             st.Page("pages/6_Weekly_Bollinger.py", title="Dashboard", icon="📊", default=True),
@@ -76,9 +78,8 @@ elif project == "nifty750":
         st.divider()
         period = st.number_input("Completed weeks", min_value=2, max_value=260,
                                  value=55, step=1, key="bollinger_period")
-        multiplier = st.number_input("Standard deviation multiplier", min_value=0.0,
-                                     max_value=10.0, value=3.7, step=0.1,
-                                     key="bollinger_multiplier_37")
+        multiplier = WeeklyBollingerService.DEFAULT_MULTIPLIER
+        st.caption(f"Standard deviation multiplier: fixed at {multiplier:g}×")
         if st.button("Refresh NIFTY 750 data", type="primary", width="stretch"):
             try:
                 progress = st.progress(0, text="Starting NIFTY 750 data refresh…")
@@ -105,10 +106,10 @@ elif project == "nifty750":
                 f"Latest completed week: {report['latest_week_end']:%d %b %Y} · "
                 f"{len(report['results'])} eligible / {report['universe_count']} constituents"
             )
-            if report["period"] != int(period) or abs(report["multiplier"] - float(multiplier)) > 1e-9:
+            if report["period"] != int(period) or abs(report["multiplier"] - multiplier) > 1e-9:
                 st.warning(
-                    f"Current snapshot uses {report['period']} weeks and {report['multiplier']:g}σ. "
-                    "Refresh to apply the selected settings."
+                    f"Current snapshot uses {report['period']} weeks and "
+                    f"{report['multiplier']:g}×. Refresh to apply the current settings."
                 )
         else:
             st.info("Refresh data to populate the dashboard, rankings, analysis, and Excel report.")
