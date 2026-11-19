@@ -77,7 +77,7 @@ elif project == "nifty750":
             st.rerun()
         st.divider()
         period = st.number_input("Working days", min_value=2, max_value=1000,
-                                 value=385, step=1, key="bollinger_period_daily")
+                                 value=55, step=1, key="bollinger_period_daily")
         multiplier = WeeklyBollingerService.DEFAULT_MULTIPLIER
         st.caption(f"Standard deviation multiplier: fixed at {multiplier:g}×")
         if st.button("Refresh NIFTY 750 data", type="primary", width="stretch"):

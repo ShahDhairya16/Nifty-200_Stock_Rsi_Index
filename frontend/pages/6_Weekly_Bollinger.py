@@ -18,14 +18,14 @@ from frontend.utils.weekly_bollinger_report import (
 
 st.title("NIFTY 750 Bollinger Dashboard")
 st.caption(
-    "The default window is each stock’s last 385 completed NSE trading-session closes, with population variance "
+    "The default window is each stock’s last 55 completed NSE trading-session closes, with population variance "
     "and a fixed 3.7 multiplier: Upper/Lower Band = Middle Band ± 3.7 × Standard Deviation."
 )
 report = get_weekly_bollinger_report()
 if not report:
     with st.container(border=True):
         st.subheader("Load the latest dashboard snapshot")
-        st.caption("The refresh fetches daily market-wide NSE files and aligns the last 385 sessions.")
+        st.caption("The refresh fetches daily market-wide NSE files and aligns the last 55 sessions.")
         if st.button("Load NIFTY 750 Dashboard", type="primary"):
             progress = st.progress(0, text="Starting NIFTY 750 data refresh…")
 

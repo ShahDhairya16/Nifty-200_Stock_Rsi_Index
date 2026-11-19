@@ -82,13 +82,13 @@ class WeeklyBollingerService:
     """Fetch daily NSE prices for the supplied NIFTY universe and export bands.
 
     The supplied NIFTY Total Market constituent workbook is the authoritative
-    universe for this report. Each calculation uses the last 385 completed NSE
+    universe for this report. Each calculation uses the last 55 completed NSE
     trading-session closes, sourced from market-wide daily bhavcopy files.
     """
 
     UNIVERSE_FILE = Path(__file__).resolve().parents[2] / "data" / "ind_niftytotalmarket_list.xlsx"
     BHAVCOPY_CACHE_FILE = Path(__file__).resolve().parents[2] / "data" / "nifty750_bhavcopy_cache.sqlite3"
-    DEFAULT_PERIOD = 385
+    DEFAULT_PERIOD = 55
     DEFAULT_MULTIPLIER = 3.7
     # A bounded pool speeds up the cold fetch while keeping NSE request bursts
     # well below the requested 50–100 connection range that can trigger throttling.
@@ -274,7 +274,7 @@ class WeeklyBollingerService:
         return {str(row.symbol): float(row.close) for row in selected.itertuples(index=False)}
 
     @staticmethod
-    def calculate_bollinger(symbol: str, closes: Iterable[float], period: int = 385,
+    def calculate_bollinger(symbol: str, closes: Iterable[float], period: int = 55,
                             multiplier: float = 3.7) -> Dict[str, Any]:
         values = pd.Series(list(closes), dtype="float64").dropna()
         if period < 1 or multiplier < 0:
@@ -406,7 +406,7 @@ class WeeklyBollingerService:
                     ("Earliest trading session in calculation", report["history_start_date"].isoformat()),
                     ("Price data source", report["price_data_source"]),
                     ("Close construction", "Available daily closes for all universe stocks; missing sessions are blank and are not forward-filled"),
-                    ("Closing-price sheet", "Contains partial history even for stocks omitted from the 385-session ranking"),
+                    ("Closing-price sheet", "Contains partial history even for stocks omitted from the 55-session ranking"),
                     ("Trading sessions per calculation", report["period"]),
                     ("Population variance divisor", report["period"]),
                     ("Standard deviation multiplier", report["multiplier"]),
