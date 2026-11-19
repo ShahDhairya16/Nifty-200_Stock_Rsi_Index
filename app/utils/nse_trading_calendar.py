@@ -13,8 +13,13 @@ from app.utils.date_utils import parse_date
 from app.utils.logger import logger
 
 
-# NSE official 2026 cash-market holiday calendar (CM segment).
+# NSE official cash-market holidays needed to align the historical window.
 NSE_HOLIDAYS: Set[date] = {
+    date(2025, 2, 26), date(2025, 3, 14), date(2025, 3, 31),
+    date(2025, 4, 10), date(2025, 4, 14), date(2025, 4, 18),
+    date(2025, 5, 1), date(2025, 8, 15), date(2025, 8, 27),
+    date(2025, 10, 2), date(2025, 10, 21), date(2025, 10, 22),
+    date(2025, 11, 5), date(2025, 12, 25),
     date(2026, 1, 15), date(2026, 1, 26), date(2026, 2, 15),
     date(2026, 2, 19), date(2026, 3, 3), date(2026, 3, 19),
     date(2026, 3, 21),
@@ -29,7 +34,7 @@ NSE_HOLIDAYS: Set[date] = {
 
 # Official sessions outside normal weekday hours/days that aren't discoverable
 # from the holiday feed description.
-NSE_SPECIAL_SESSIONS: Set[date] = {date(2026, 11, 8)}
+NSE_SPECIAL_SESSIONS: Set[date] = {date(2025, 10, 21), date(2026, 11, 8)}
 
 _CACHE_TTL = timedelta(hours=24)
 _cached_at: Optional[datetime] = None
@@ -84,8 +89,10 @@ def _get_calendar_dates() -> Tuple[Set[date], Set[date]]:
 
     try:
         holidays, special_sessions = _load_official_calendar()
-        _cached_holidays = holidays
-        _cached_special_sessions = special_sessions
+        # Keep maintained past-year dates as a supplement in case the live
+        # NSE calendar only returns the current/future year.
+        _cached_holidays = holidays | NSE_HOLIDAYS
+        _cached_special_sessions = special_sessions | NSE_SPECIAL_SESSIONS
         logger.info("NSE trading calendar: refreshed cash-market holidays from NSE.")
     except Exception as exc:
         # Fallback is deliberately explicit in logs; it cannot silently imply

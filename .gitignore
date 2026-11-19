@@ -16,6 +16,7 @@ logs/
 *.xlsx
 !data/ind_niftytotalmarket_list.xlsx
 *.xls
+data/nifty750_bhavcopy_cache.sqlite3
 
 output/
 outputs/

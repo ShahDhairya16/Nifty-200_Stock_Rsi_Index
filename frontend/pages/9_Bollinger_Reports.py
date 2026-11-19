@@ -1,6 +1,7 @@
 import sys
-from datetime import date
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -18,25 +19,27 @@ from frontend.utils.weekly_bollinger_report import (
 
 st.title("Reports")
 st.caption(
-    "Generate the weekly Bollinger ranking workbook for the supplied NIFTY 750 universe. "
-    "The report includes band values, the included weekly closes, and unavailable symbols."
+    "Generate the daily Bollinger report for the supplied NIFTY 750 universe. "
+    "It includes band values, the configured trading-session closes, and unavailable symbols."
 )
 
-period = int(st.session_state.get("bollinger_period", WeeklyBollingerService.DEFAULT_PERIOD))
+period = int(st.session_state.get("bollinger_period_daily", WeeklyBollingerService.DEFAULT_PERIOD))
 multiplier = WeeklyBollingerService.DEFAULT_MULTIPLIER
+market_today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
 report_end_date = st.date_input(
     "Report end date",
-    value=date.today(),
-    max_value=date.today(),
-    help="The latest completed weekly candle on or before this date is used.",
+    value=market_today,
+    max_value=market_today,
+    help=("Uses one shared report end date for all stocks. For today, the close is included after 15:30 IST; "
+          "if the newest NSE file is unavailable, the whole report falls back to the latest available session."),
 )
-target_week_end = WeeklyBollingerService.latest_completed_week_end(report_end_date)
+target_trade_date = WeeklyBollingerService.latest_completed_trade_date(report_end_date)
 
 if st.button("Generate Excel Report", type="primary"):
     current = get_weekly_bollinger_report()
     matches_snapshot = (
         current
-        and current["latest_week_end"] == target_week_end
+        and current["latest_trade_date"] == target_trade_date
         and current["period"] == period
         and abs(current["multiplier"] - multiplier) < 1e-9
     )
@@ -44,38 +47,40 @@ if st.button("Generate Excel Report", type="primary"):
         if not matches_snapshot:
             progress = st.progress(0, text="Starting report data refresh…")
 
-            def update_progress(completed, total, symbol):
+            def update_progress(completed, total, trade_date):
                 interval = max(1, total // 100)
                 if completed == total or completed % interval == 0:
                     progress.progress(
                         completed / total,
-                        text=f"Fetched {completed} of {total} symbols · latest: {symbol}",
+                        text=f"Fetched {completed} of {total} daily market files · latest: {trade_date}",
                     )
 
-            with st.spinner("Fetching and calculating the requested weekly snapshot…"):
+            with st.spinner("Fetching and calculating the requested daily snapshot…"):
                 refresh_weekly_bollinger_report(
                     period, multiplier, progress_callback=update_progress, as_of=report_end_date
                 )
             progress.empty()
 
         report = get_weekly_bollinger_report()
-        st.session_state["bollinger_generated_report"] = {
-            "week_end": report["latest_week_end"],
+        with st.spinner("Preparing the Excel workbook…"):
+            excel = WeeklyBollingerService.build_excel_report(report)
+        st.session_state["nifty750_daily_generated_report_v2"] = {
+            "trade_date": report["latest_trade_date"],
             "period": report["period"],
             "multiplier": report["multiplier"],
-            "filename": report["excel"]["filename"],
-            "data": report["excel"]["data"],
+            "filename": excel["filename"],
+            "data": excel["data"],
             "universe_count": report["universe_count"],
             "eligible_count": len(report["results"]),
             "unavailable_count": len(report["unavailable"]),
             "unavailable": report["unavailable"],
         }
-        st.success(f"Excel report generated for week ending {report['latest_week_end']:%d %b %Y}.")
+        st.success(f"Excel report generated through {report['latest_trade_date']:%d %b %Y}.")
     except Exception as exc:
         st.error(f"Report generation failed: {exc}")
 
-generated = st.session_state.get("bollinger_generated_report")
-if (generated and generated["week_end"] == target_week_end
+generated = st.session_state.get("nifty750_daily_generated_report_v2")
+if (generated and generated["trade_date"] <= target_trade_date
         and generated["period"] == period
         and abs(generated["multiplier"] - multiplier) < 1e-9):
     st.download_button(
@@ -85,7 +90,7 @@ if (generated and generated["week_end"] == target_week_end
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     st.caption(
-        f"Week ending {generated['week_end']:%d %b %Y} · {generated['eligible_count']} eligible · "
+        f"Through {generated['trade_date']:%d %b %Y} · {generated['eligible_count']} eligible · "
         f"{generated['unavailable_count']} unavailable · {generated['universe_count']} constituents"
     )
     if generated["unavailable"]:
@@ -95,8 +100,8 @@ if (generated and generated["week_end"] == target_week_end
             }), hide_index=True, width="stretch")
 else:
     current = get_weekly_bollinger_report()
-    if current and current["latest_week_end"] == target_week_end:
+    if current and current["latest_trade_date"] == target_trade_date:
         st.info(
-            f"A snapshot for week ending {target_week_end:%d %b %Y} is ready. "
+            f"A snapshot through {target_trade_date:%d %b %Y} is ready. "
             "Generate the workbook to download it."
         )

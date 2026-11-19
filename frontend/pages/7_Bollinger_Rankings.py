@@ -18,7 +18,7 @@ if not report:
 else:
     st.caption(
         f"Ranked across the complete supplied universe by Upper Band, highest first. "
-        f"Latest completed weekly candle: {report['latest_week_end']:%d %b %Y}."
+        f"Latest completed trading session: {report['latest_trade_date']:%d %b %Y}."
     )
     search = st.text_input("Find a stock", placeholder="Enter symbol or company name")
     frame = pd.DataFrame(report["results"])
