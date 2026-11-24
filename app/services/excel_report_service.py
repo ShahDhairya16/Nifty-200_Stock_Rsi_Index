@@ -8,7 +8,6 @@ import pandas as pd
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from app.database.repositories import StockRepository, PriceRepository, RSIRepository
-from app.services.historical_data_service import HistoricalDataService
 from app.services.rsi_service import RSIService
 from app.services.stock_universe_service import StockUniverseService
 from app.utils.date_utils import format_date_iso, parse_date
@@ -60,25 +59,23 @@ class ExcelReportService:
         )
 
         # ------------------------------------------------------------------
-        # 1b. Ensure every constituent has recent history before building the
-        # report. The universe may have grown since the last refresh, and older
-        # constituents may have stale prices, so check all active stocks.
+        # 1b. Fetch the last 70 market-wide close files through the concurrent
+        # Bollinger fetch/cache path, then calculate RSI for the active stocks.
         # ------------------------------------------------------------------
-        try:
-            history_summary = HistoricalDataService.ensure_minimum_history(
-                end_date=report_end
-            )
-            backfill_summary = history_summary.get("backfill") or {}
-            for item in backfill_summary.get("errors", []):
-                logger.warning(
-                    "NIFTY 750 Excel report history backfill failed for "
-                    f"{item.get('symbol')}: {item.get('error')}"
-                )
-            RSIService.compute_all_active_stocks_rsi()
-        except Exception as exc:
-            raise RuntimeError(
-                f"Could not prepare recent prices and RSI for the full NIFTY 750 universe: {exc}"
-            ) from exc
+        market_fetch = RSIService.fetch_market_wide_closes(
+            period=70,
+            end_date=report_end,
+        )
+        logger.info(
+            "NIFTY 750 market-wide close fetch: "
+            f"{market_fetch.get('stocks_with_complete_closes', 0)}/"
+            f"{market_fetch.get('total_stocks', 0)} stocks have 70 closes; "
+            f"{market_fetch.get('total_records_processed', 0)} close records stored."
+        )
+        RSIService.compute_recent_active_stocks_rsi(
+            period=70,
+            force=bool(market_fetch.get("total_records_processed")),
+        )
 
         # ------------------------------------------------------------------
         # 2. Load the current active NIFTY 750 universe.
@@ -181,15 +178,10 @@ class ExcelReportService:
             .reset_index()
         )
 
-        # The workbook must contain an actual close for every stock on every
-        # one of its 70 trading dates; reindexing alone only guarantees columns.
+        # Keep a per-stock count so the workbook makes incomplete exchange
+        # history visible instead of silently treating the universe as complete.
         missing_close_counts = matrix[symbols].isna().sum()
         missing_close_counts = missing_close_counts[missing_close_counts > 0]
-        if not missing_close_counts.empty:
-            raise ValueError(
-                "Could not retrieve all 70 closing prices for these NIFTY 750 "
-                f"stocks: {missing_close_counts.to_dict()}"
-            )
 
         # ------------------------------------------------------------------
         # 6. Load RSI data.
@@ -341,11 +333,6 @@ class ExcelReportService:
             .isna()
             .any(axis=1)
         ]["Symbol"].tolist()
-        if missing_rsi:
-            raise ValueError(
-                "RSI calculation is incomplete for these NIFTY 750 stocks: "
-                f"{missing_rsi}"
-            )
 
         # ------------------------------------------------------------------
         # 10. Validate the universe BEFORE creating/saving the workbook.
@@ -491,6 +478,47 @@ class ExcelReportService:
                 list(row)
             )
 
+        coverage_sheet = workbook.create_sheet("Data Coverage")
+        coverage_sheet.append([
+            "Symbol", "Company Name", "Closes in Last 70 Trading Dates",
+            "Missing Dates", "Latest Close Date", "RSI 22", "RSI 44",
+            "RSI 66", "Average RSI", "Status",
+        ])
+        ranking_by_symbol = ranking.set_index("Symbol")
+        for stock in stocks:
+            symbol = str(stock["symbol"]).strip().upper()
+            close_count = len(dates) - int(missing_close_counts.get(symbol, 0))
+            rsi_values = ranking_by_symbol.loc[symbol]
+            missing_periods = [
+                period
+                for period, column in (
+                    (22, "RSI 22"), (44, "RSI 44"),
+                    (66, "RSI 66"), ("Average", "Average RSI"),
+                )
+                if pd.isna(rsi_values[column])
+            ]
+            status_parts = []
+            if close_count == 0:
+                status_parts.append("No exchange price history")
+            elif close_count < len(dates):
+                status_parts.append(f"{close_count}/{len(dates)} closes; no close on some dates")
+            if missing_periods:
+                status_parts.append("RSI unavailable: " + ", ".join(map(str, missing_periods)))
+            status = "; ".join(status_parts) if status_parts else "Complete"
+            latest_close_date = rsi_values["Latest Date"]
+            coverage_sheet.append([
+                symbol,
+                stock.get("company_name") or symbol,
+                close_count,
+                len(dates) - close_count,
+                latest_close_date,
+                rsi_values["RSI 22"],
+                rsi_values["RSI 44"],
+                rsi_values["RSI 66"],
+                rsi_values["Average RSI"],
+                status,
+            ])
+
         # ------------------------------------------------------------------
         # 13. Existing Excel formatting.
         # ------------------------------------------------------------------
@@ -593,5 +621,10 @@ class ExcelReportService:
             "rsi_unexpected_stocks": sorted(
                 rsi_ranking_symbols
                 - active_symbols
+            ),
+            "stocks_with_all_70_closes": len(symbols) - len(missing_close_counts),
+            "stocks_with_complete_rsi": len(symbols) - len(missing_rsi),
+            "stocks_with_data_gaps": sorted(
+                set(missing_close_counts.index).union(missing_rsi)
             ),
         }

@@ -32,7 +32,6 @@ def main():
     if args.compute_rsi:
         print(RSIService.compute_all_active_stocks_rsi())
     if args.generate_excel:
-        RSIService.compute_all_active_stocks_rsi()
         print(ExcelReportService.generate_nifty200_excel_report(refresh_market_data=False, end_date=args.end_date))
 
     flags = ("init_db", "sync_universe", "backfill_historical", "recover_missing", "compute_rsi", "generate_excel")

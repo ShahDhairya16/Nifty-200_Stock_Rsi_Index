@@ -1,9 +1,18 @@
+import os
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+# Streamlit reloads changed modules only from this script's folder (frontend/)
+# and from folders listed in PYTHONPATH. Listing the repo root makes it reload
+# changed app/ modules too, so a deploy never runs new frontend code against
+# old app/ code still cached in memory (AttributeError after "Updated app!").
+_pythonpath = [path for path in os.environ.get("PYTHONPATH", "").split(os.pathsep) if path]
+if str(ROOT) not in _pythonpath:
+    os.environ["PYTHONPATH"] = os.pathsep.join([str(ROOT), *_pythonpath])
 
 import streamlit as st
 

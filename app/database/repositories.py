@@ -202,6 +202,46 @@ class PriceRepository:
         return total_upserted
 
     @classmethod
+    def bulk_upsert_closes(cls, records: List[Dict[str, Any]], batch_size: int = 5000) -> int:
+        """Upsert close-only market-wide snapshots without clearing OHLCV fields."""
+        if not records:
+            return 0
+
+        col = cls.get_collection()
+        operations = []
+        for item in records:
+            symbol = str(item.get("symbol", "")).strip().upper()
+            raw_date = item.get("trade_date")
+            close_price = pd.to_numeric(item.get("close_price"), errors="coerce")
+            if not symbol or raw_date is None or pd.isna(close_price):
+                continue
+            if isinstance(raw_date, (datetime, date)):
+                date_str = format_date_iso(raw_date)
+            else:
+                parsed = parse_date(str(raw_date))
+                date_str = format_date_iso(parsed) if parsed else None
+            if not date_str:
+                continue
+            operations.append(
+                UpdateOne(
+                    {"symbol": symbol, "trade_date": date_str},
+                    {"$set": {
+                        "symbol": symbol,
+                        "trade_date": date_str,
+                        "close_price": float(close_price),
+                    }},
+                    upsert=True,
+                )
+            )
+
+        total_upserted = 0
+        for start in range(0, len(operations), batch_size):
+            result = col.bulk_write(operations[start:start + batch_size], ordered=False)
+            total_upserted += result.upserted_count + result.modified_count
+        logger.info(f"Bulk upserted {total_upserted} close records into MongoDB.")
+        return total_upserted
+
+    @classmethod
     def upsert_prices(cls, records: List[Dict[str, Any]]) -> int:
         return cls.bulk_upsert_prices(records)
 

@@ -7,7 +7,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from app.services.excel_report_service import ExcelReportService
-from app.services.rsi_service import RSIService
 from app.utils.date_utils import format_date_iso
 from app.utils.logger import logger
 
@@ -32,7 +31,6 @@ def main():
     print("Sorting stocks by Average RSI descending...\n")
     print("Saving file...\n")
 
-    RSIService.compute_all_active_stocks_rsi()
     result = ExcelReportService.generate_nifty200_excel_report(refresh_market_data=False, end_date=date(2026, 9, 7))
 
     print("=" * 50)

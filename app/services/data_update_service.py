@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional, Callable
 
 from app.database.repositories import StockRepository, PriceRepository, RSIRepository
 from app.services.data_normalizer import DataNormalizer
-from app.services.historical_data_service import HistoricalDataService
 from app.services.nse_client import NSEClient
 from app.services.rsi_service import RSIService
 from app.utils.date_utils import format_date_iso
@@ -42,7 +41,7 @@ class DataUpdateService:
         """
         Main entry point called from the dashboard refresh.
         1. Determines which trading days are missing from MongoDB.
-        2. For each missing day, fetches NSE Bhavcopy and upserts NIFTY 750 prices.
+        2. Fetches the latest 70 NSE market files concurrently and upserts closes.
         3. Recomputes RSI metrics for all active stocks.
         Returns a summary dict with counts and any errors.
         """
@@ -76,49 +75,48 @@ class DataUpdateService:
         summary["latest_date_before"] = format_date_iso(latest_date)
         logger.info(f"DataUpdateService: Last stored price date = {latest_date}, target complete date = {target_date}")
 
-        # Ensure the active universe and bundled snapshot match NSE. This also
-        # backfills newly added constituents and recomputes their RSI.
+        # Ensure the active universe matches the supplied workbook. Price
+        # history is fetched in one concurrent market-wide pass below.
         try:
             from app.services.universe_update_service import UniverseUpdateService
 
             summary["universe"] = UniverseUpdateService.auto_update(
                 force=True,
-                backfill_new=True,
-                recompute_rsi=True,
+                backfill_new=False,
+                recompute_rsi=False,
             )
             if summary["universe"].get("errors"):
                 logger.warning(
                     "DataUpdateService: Universe sync reported: "
                     f"{summary['universe']['errors']}"
                 )
-            if summary["universe"].get("rsi_recomputed"):
-                summary["rsi_recomputed"] = True
         except Exception as exc:
             logger.warning(f"DataUpdateService: Stock universe sync skipped/failed ({exc}). Using stored active stocks.")
 
-        # Safety net for stocks that joined the universe after the original
-        # data load. They may only have the last couple of Bhavcopy rows, which
-        # makes RSI 22/44/66 impossible. Backfill at least 70 recent closes.
+        # Refresh recent sessions for all active constituents through the same
+        # concurrent and cached market-file path as the Bollinger calculator.
         try:
-            summary["history_backfill"] = HistoricalDataService.ensure_minimum_history()
-            history_errors = (summary["history_backfill"].get("backfill") or {}).get("errors", [])
-            for item in history_errors:
-                message = f"{item.get('symbol')}: {item.get('error')}"
-                summary["errors"].append(message)
-                logger.warning(f"DataUpdateService: History backfill error — {message}")
+            summary["history_backfill"] = RSIService.fetch_market_wide_closes(
+                period=70,
+                end_date=target_date,
+                progress_callback=progress_callback,
+            )
+            for message in summary["history_backfill"].get("errors", []):
+                summary["errors"].append(str(message))
+                logger.warning(f"DataUpdateService: Market history fetch error — {message}")
         except Exception as exc:
             message = f"Failed to ensure minimum price history: {exc}"
             summary["errors"].append(message)
             logger.error(f"DataUpdateService: {message}")
 
-        history_records = (
-            (summary["history_backfill"] or {}).get("backfill") or {}
-        ).get("total_records_processed", 0)
+        history_records = (summary["history_backfill"] or {}).get(
+            "total_records_processed", 0
+        )
 
         # If already up-to-date (or today is weekend / market closed today)
         if latest_date >= target_date:
             if history_records > 0:
-                RSIService.compute_all_active_stocks_rsi()
+                RSIService.compute_recent_active_stocks_rsi(period=70, force=True)
                 summary["rsi_recomputed"] = True
             summary["status"] = "UP_TO_DATE"
             summary["latest_date_after"] = format_date_iso(latest_date)
@@ -205,7 +203,10 @@ class DataUpdateService:
             or history_records > 0
         ):
             try:
-                rsi_summary = RSIService.compute_all_active_stocks_rsi()
+                rsi_summary = RSIService.compute_recent_active_stocks_rsi(
+                    period=70,
+                    force=True,
+                )
                 summary["rsi_recomputed"] = True
                 logger.info(
                     f"DataUpdateService: RSI recomputed — {rsi_summary['successful_stocks']} stocks updated."
