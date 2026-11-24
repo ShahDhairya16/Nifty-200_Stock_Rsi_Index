@@ -8,9 +8,9 @@ from app.config import config
 from app.database.repositories import StockRepository, SyncMetadataRepository
 from app.services.data_normalizer import DataNormalizer
 from app.services.historical_data_service import HistoricalDataService
-from app.services.nse_client import NSEClient
 from app.services.rsi_service import RSIService
 from app.services.stock_universe_service import StockUniverseService
+from app.services.weekly_bollinger_service import WeeklyBollingerService
 from app.utils.logger import logger
 
 
@@ -19,17 +19,9 @@ STOCK_SNAPSHOT_PATH = BASE_DIR / "data" / "stocks.json"
 
 
 class UniverseUpdateService:
-    """Keep the NIFTY 200 universe and bundled snapshot in sync with NSE.
+    """Keep the RSI universe synchronized with the supplied NIFTY 750 workbook."""
 
-    NSE reviews the NIFTY 200 index semi-annually (effective around the last
-    trading day of March and September). Rather than assuming a fixed date,
-    this service checks the official constituent file at most once per
-    configured interval. Any addition or removal, whether from a scheduled
-    rebalance or an ad-hoc replacement, is picked up automatically.
-    """
-
-    METADATA_KEY = "nifty200_universe"
-    REBALANCE_MONTHS = (3, 9)
+    METADATA_KEY = "nifty750_rsi_universe"
 
     @staticmethod
     def _now() -> str:
@@ -107,8 +99,8 @@ class UniverseUpdateService:
                 }
             )
 
-        if len(rows) != 200:
-            raise ValueError(f"Refusing to write {len(rows)} rows to the NIFTY 200 snapshot; expected 200.")
+        if not rows:
+            raise ValueError("Refusing to write an empty NIFTY 750 stock snapshot.")
 
         temporary_path = STOCK_SNAPSHOT_PATH.with_suffix(".json.tmp")
         with temporary_path.open("w", encoding="utf-8") as handle:
@@ -150,9 +142,9 @@ class UniverseUpdateService:
             }
 
         try:
-            constituents = NSEClient.get_nifty200_constituents()
+            constituents = WeeklyBollingerService.fetch_stock_universe()
         except Exception as exc:
-            logger.warning(f"UniverseUpdateService: NSE constituent check failed: {exc}")
+            logger.warning(f"UniverseUpdateService: Could not load the supplied NIFTY 750 workbook: {exc}")
             cls._save_failure(metadata, now, str(exc))
             return {
                 "status": "FAILED",
@@ -167,7 +159,7 @@ class UniverseUpdateService:
 
         fetched: Dict[str, Dict[str, Any]] = {}
         try:
-            for row in constituents.to_dict(orient="records"):
+            for row in constituents:
                 stock = DataNormalizer.normalize_stock_metadata(row)
                 if stock and stock.get("symbol"):
                     fetched[str(stock["symbol"]).strip().upper()] = stock
@@ -184,11 +176,8 @@ class UniverseUpdateService:
 
         live_symbols = set(fetched)
         errors: List[str] = []
-        if len(live_symbols) != 200:
-            message = (
-                "NSE returned an invalid NIFTY 200 list "
-                f"({len(live_symbols)} unique symbols). The existing universe was kept."
-            )
+        if not live_symbols:
+            message = "The supplied NIFTY 750 workbook contains no valid stock symbols."
             logger.error(f"UniverseUpdateService: {message}")
             cls._save_failure(metadata, now, message)
             return {
@@ -219,7 +208,7 @@ class UniverseUpdateService:
                 if universe_summary.get("errors"):
                     errors.extend(str(error) for error in universe_summary["errors"])
             except Exception as exc:
-                message = f"Failed to apply NIFTY 200 constituents: {exc}"
+                message = f"Failed to apply NIFTY 750 constituents: {exc}"
                 logger.error(f"UniverseUpdateService: {message}")
                 errors.append(message)
 
@@ -230,7 +219,7 @@ class UniverseUpdateService:
                 snapshot_updated = True
                 logger.info("UniverseUpdateService: Updated data/stocks.json snapshot.")
             except Exception as exc:
-                message = f"Failed to update bundled NIFTY 200 snapshot: {exc}"
+                message = f"Failed to update bundled NIFTY 750 snapshot: {exc}"
                 logger.error(f"UniverseUpdateService: {message}")
                 errors.append(message)
 

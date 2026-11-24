@@ -19,7 +19,8 @@ from frontend.utils.weekly_bollinger_report import (
 st.title("NIFTY 750 Bollinger Dashboard")
 st.caption(
     "The default window is each stock’s last 55 completed NSE trading-session closes, with population variance "
-    "and a fixed 3.7 multiplier: Upper/Lower Band = Middle Band ± 3.7 × Standard Deviation."
+    "and a fixed 3.7 multiplier: Upper/Lower Band = Middle Band ± 3.7 × Standard Deviation. "
+    "Stocks are ranked by how far the latest close is above the middle band, in percent."
 )
 report = get_weekly_bollinger_report()
 if not report:
@@ -62,21 +63,26 @@ else:
     )
 
     if results:
-        st.subheader("Highest Upper Bands")
+        st.subheader("Top 15 by % vs Middle Band")
         top = pd.DataFrame(results[:15])
-        chart = px.bar(top.sort_values("upper_band"), x="upper_band", y="symbol", orientation="h",
-                       labels={"upper_band": "Upper Band", "symbol": "Stock Symbol"},
-                       color="upper_band", color_continuous_scale="Blues")
+        chart = px.bar(top.sort_values("close_vs_middle_pct"), x="close_vs_middle_pct", y="symbol",
+                       orientation="h",
+                       labels={"close_vs_middle_pct": "% vs Middle Band", "symbol": "Stock Symbol"},
+                       color="close_vs_middle_pct", color_continuous_scale="Blues")
         chart.update_layout(showlegend=False, coloraxis_showscale=False, height=520,
-                            yaxis_title=None, xaxis_title="Upper Band")
+                            yaxis_title=None, xaxis_title="Latest close vs middle band (%)")
+        chart.update_xaxes(ticksuffix="%")
+        chart.update_traces(hovertemplate="%{y}: %{x:+.2f}%<extra></extra>")
         st.plotly_chart(chart, width="stretch")
         st.dataframe(pd.DataFrame([{
             "Rank": row["rank"], "Stock Symbol": row["symbol"],
             "Latest Closing Price": row["latest_close"], "Middle Band": row["middle_band"],
+            "% vs Middle Band": row["close_vs_middle_pct"],
             "Upper Band": row["upper_band"], "Lower Band": row["lower_band"],
         } for row in results[:10]]), hide_index=True, width="stretch", column_config={
-            name: st.column_config.NumberColumn(format="%.2f") for name in
-            ["Latest Closing Price", "Middle Band", "Upper Band", "Lower Band"]
+            "% vs Middle Band": st.column_config.NumberColumn(format="%+.2f%%"),
+            **{name: st.column_config.NumberColumn(format="%.2f") for name in
+               ["Latest Closing Price", "Middle Band", "Upper Band", "Lower Band"]},
         })
     else:
         st.warning("No stocks currently have all required daily closes.")

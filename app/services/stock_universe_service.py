@@ -5,16 +5,16 @@ from typing import Any, Dict, Optional
 
 from app.database.repositories import StockRepository
 from app.services.data_normalizer import DataNormalizer
-from app.services.nse_client import NSEClient
+from app.services.weekly_bollinger_service import WeeklyBollingerService
 from app.utils.logger import logger
 
 
 class StockUniverseService:
-    """Synchronize the NIFTY 200 universe into MongoDB storage."""
+    """Synchronize the supplied constituent universe into MongoDB storage."""
 
     @staticmethod
     def apply_constituents(constituents: Any) -> Dict[str, Any]:
-        """Apply a fetched NIFTY 200 constituent table to MongoDB.
+        """Apply a fetched constituent list to MongoDB.
 
         Additions are marked active, metadata changes are updated, and removed
         constituents are deactivated. Historical price/RSI records are retained.
@@ -22,7 +22,12 @@ class StockUniverseService:
         summary = {"total_fetched": 0, "new_stocks": 0, "updated_stocks": 0, "deactivated_stocks": 0, "errors": []}
         existing = {stock["symbol"].strip().upper(): stock for stock in StockRepository.get_all_stocks()}
         fetched = {}
-        for row in constituents.to_dict(orient="records"):
+        rows = (
+            constituents.to_dict(orient="records")
+            if hasattr(constituents, "to_dict")
+            else list(constituents)
+        )
+        for row in rows:
             stock = DataNormalizer.normalize_stock_metadata(row)
             if stock and stock.get("symbol"):
                 fetched[stock["symbol"].strip().upper()] = stock
@@ -56,17 +61,17 @@ class StockUniverseService:
     def sync_nifty200_universe(session: Optional[Any] = None) -> Dict[str, Any]:
         summary = {"total_fetched": 0, "new_stocks": 0, "updated_stocks": 0, "deactivated_stocks": 0, "errors": []}
         try:
-            constituents = NSEClient.get_nifty200_constituents()
+            constituents = WeeklyBollingerService.fetch_stock_universe()
         except Exception as exc:
             summary["errors"].append(str(exc))
-            logger.error(f"Failed to fetch NIFTY 200 constituents: {exc}")
+            logger.error(f"Failed to load NIFTY 750 constituents: {exc}")
             return summary
 
         return StockUniverseService.apply_constituents(constituents)
 
     @staticmethod
     def sync_bundled_nifty200_universe() -> Dict[str, Any]:
-        """Sync the repository's bundled constituent snapshot into MongoDB.
+        """Sync the supplied NIFTY Total Market snapshot into MongoDB.
 
         Excel exports use this snapshot so their stock list matches the list
         supplied with the project, regardless of changes to the live NSE page.
@@ -90,15 +95,15 @@ class StockUniverseService:
             for row in rows:
                 stock = DataNormalizer.normalize_stock_metadata(row)
                 if not stock:
-                    raise ValueError("The bundled NIFTY 200 list contains an invalid stock row.")
+                    raise ValueError("The bundled NIFTY 750 list contains an invalid stock row.")
                 if stock["symbol"] in fetched:
-                    raise ValueError(f"Duplicate symbol in bundled NIFTY 200 list: {stock['symbol']}.")
+                    raise ValueError(f"Duplicate symbol in bundled NIFTY 750 list: {stock['symbol']}.")
                 fetched[stock["symbol"]] = stock
-            if len(fetched) != 200:
-                raise ValueError(f"Expected exactly 200 unique stocks in data/stocks.json; found {len(fetched)}.")
+            if not fetched:
+                raise ValueError("Expected at least one unique stock in data/stocks.json.")
         except Exception as exc:
             summary["errors"].append(str(exc))
-            logger.error(f"Failed to load bundled NIFTY 200 constituents from {stock_file}: {exc}")
+            logger.error(f"Failed to load bundled NIFTY 750 constituents from {stock_file}: {exc}")
             return summary
 
         expected_symbols = set(fetched)

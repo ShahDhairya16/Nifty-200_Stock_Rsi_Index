@@ -1,6 +1,6 @@
-# Deploying the NIFTY 200 RSI dashboard
+# Deploying the NIFTY 750 RSI dashboard
 
-The Streamlit entry point is `frontend/streamlit_app.py`. It reads existing stock, price, and RSI records from MongoDB. It does not run a historical backfill or recompute all RSI data at startup. The sidebar's **Refresh & Update Data** action checks missing NSE sessions against the NSE holiday calendar, fetches NSE Bhavcopy data, stores NIFTY 200 prices, and recomputes RSI when new prices arrive. The official holiday calendar is refreshed from NSE and cached for 24 hours. Muhurat sessions are detected from NSE's Diwali/Laxmi Pujan calendar entries; other separately announced special sessions may need to be added to the maintained exception list if NSE does not expose them in that calendar.
+The Streamlit entry point is `frontend/streamlit_app.py`. It reads stock, price, and RSI records from MongoDB and uses the supplied NIFTY Total Market workbook at `data/ind_niftytotalmarket_list.xlsx` as the RSI universe (755 symbols in the current workbook). On startup and on **Refresh & Update Data**, the app syncs the workbook constituents, backfills new stocks, and recomputes RSI. Daily refresh checks missing NSE sessions against the NSE holiday calendar and fetches NSE Bhavcopy data for the active universe. The official holiday calendar is refreshed from NSE and cached for 24 hours. Muhurat sessions are detected from NSE's Diwali/Laxmi Pujan calendar entries; other separately announced special sessions may need to be added to the maintained exception list if NSE does not expose them in that calendar.
 
 ## Local development
 
@@ -49,22 +49,22 @@ For local use, copy `.env.example` to `.env` and set the values you need. The co
 | `GEMINI_MODEL` | Preferred Gemini model used by the chatbot and recommendations | `gemini-3.5-flash-lite` |
 | `GEMINI_FALLBACK_MODELS` | Comma-separated models tried when the preferred model is unavailable or busy | `gemini-3.6-flash,gemini-3.5-flash,gemini-3.8-flash,gemini-3.7-flash,gemini-flash-latest,gemini-2.5-flash` |
 | `GEMINI_TEMPERATURE` | Gemini sampling temperature (0 = focused, 1 = creative) | `0.3` |
-| `UNIVERSE_CHECK_INTERVAL_HOURS` | Hours between automatic NSE NIFTY 200 constituent checks | `24` |
+| `UNIVERSE_CHECK_INTERVAL_HOURS` | Hours between automatic NIFTY 750 workbook sync checks | `24` |
 
 Keep `.env` and `.streamlit/secrets.toml` out of Git. `.streamlit/secrets.toml.example` is a placeholder template only.
 
-## AI Advisor and automatic NIFTY 200 updates
+## AI Advisor and automatic NIFTY 750 updates
 
 The **AI Advisor** page uses Google Gemini for two features:
 
-- A **chatbot** that answers questions using the current RSI 22/44/66, average RSI, latest close, and 30-day change for every active NIFTY 200 stock.
+- A **chatbot** that answers questions using the current RSI 22/44/66, average RSI, latest close, and 30-day change for every active NIFTY 750 stock.
 - A **purchase recommendation** screen that screens the same snapshot against a risk profile, horizon, budget, and existing holdings. Results are educational and are not SEBI-registered investment advice.
 
 Add a key from [Google AI Studio](https://aistudio.google.com/) as `GEMINI_API_KEY`, or paste it into the AI Advisor page for the current session only. The app supports both the current `google-genai` package and the older `google-generativeai` package.
 
 The dashboard generates an automatic shortlist on first load and caches it for 6 hours; per-stock AI views are cached per symbol. AI failures are retried after 5 minutes. A free-tier Gemini key allows only a small number of requests per minute/day, so heavy use can hit `429` quota errors. Use a key with higher quota for production.
 
-The NIFTY 200 list changes at NSE's semi-annual review (effective around the last trading day of March and September), and replacements can occur at other times. On startup and on **Refresh & Update Data**, the app fetches the official NSE constituent file, compares it with MongoDB, updates `data/stocks.json`, deactivates removed symbols, backfills newly added symbols, and recomputes RSI. The check is throttled by `UNIVERSE_CHECK_INTERVAL_HOURS`; the Reports page always uses the latest auto-synced snapshot. Failures leave the existing universe intact and are shown in the logs/sidebar.
+The RSI universe comes from `data/ind_niftytotalmarket_list.xlsx`, the same workbook used by the NIFTY 750 Bollinger section. On startup and on **Refresh & Update Data**, the app compares the workbook with MongoDB, updates `data/stocks.json`, deactivates removed symbols, backfills newly added symbols, and recomputes RSI. The check is throttled by `UNIVERSE_CHECK_INTERVAL_HOURS`; the Reports page uses the resulting snapshot. Failures leave the existing universe intact and are shown in the logs/sidebar.
 
 ## MongoDB Atlas setup
 
@@ -85,7 +85,7 @@ python main.py --backfill-historical
 python main.py --compute-rsi
 ```
 
-The backfill defaults to the last year and processes all active NIFTY 200 stocks, so it can take a while. You can provide `--start-date YYYY-MM-DD --end-date YYYY-MM-DD` to limit the range. These operations are intentionally manual and must not be run as part of website startup. To migrate the repository's legacy CSV/JSON files instead, `python scripts/migrate_to_mongodb.py` initializes indexes and upserts those local files; inspect the files and target database first. `--recover-missing` is a historical range backfill alias in the current code, not the dashboard's daily Bhavcopy updater.
+The backfill defaults to the last year and processes all active NIFTY 750 stocks, so it can take a while. You can provide `--start-date YYYY-MM-DD --end-date YYYY-MM-DD` to limit the range. These operations are intentionally manual and must not be run as part of website startup. To migrate the repository's legacy CSV/JSON files instead, `python scripts/migrate_to_mongodb.py` initializes indexes and upserts those local files; inspect the files and target database first. `--recover-missing` is a historical range backfill alias in the current code, not the dashboard's daily Bhavcopy updater.
 
 ## Streamlit Community Cloud
 

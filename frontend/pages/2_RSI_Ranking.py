@@ -12,7 +12,7 @@ from frontend.utils.data_loader import get_rsi_ranking
 from frontend.utils.formatters import format_date
 
 render_sidebar()
-st.title("NIFTY 200 RSI Ranking")
+st.title("NIFTY 750 RSI Ranking")
 
 render_ai_recommendations_on_demand("ranking", limit=5, show_summary=False)
 

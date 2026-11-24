@@ -15,7 +15,7 @@ from frontend.utils.data_loader import get_dashboard_summary, get_rsi_ranking
 from frontend.utils.formatters import format_date, format_number
 
 render_sidebar()
-st.title("NIFTY 200 RSI Dashboard")
+st.title("NIFTY 750 RSI Dashboard")
 st.caption("Market momentum analysis based on RSI 22, RSI 44 and RSI 66")
 
 try:

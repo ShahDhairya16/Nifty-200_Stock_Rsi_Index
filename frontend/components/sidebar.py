@@ -34,7 +34,7 @@ def render_sidebar():
         if st.button("← Choose project", width="stretch"):
             st.session_state["selected_project"] = "home"
             st.rerun()
-        st.markdown("## NIFTY 200")
+        st.markdown("## NIFTY 750")
         st.caption("RSI analytics workspace · list auto-syncs daily")
         st.divider()
 
@@ -103,7 +103,7 @@ def render_sidebar():
                 removed = universe.get("removed") or []
                 if added or removed:
                     st.info(
-                        "NIFTY 200 list updated: "
+                        "NIFTY 750 list updated: "
                         f"{len(added)} added, {len(removed)} removed."
                     )
 

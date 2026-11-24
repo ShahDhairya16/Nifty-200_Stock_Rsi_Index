@@ -22,19 +22,19 @@ from app.services import stock_universe_service as stock_universe_module
 
 STOCK_LIST_PATH = ROOT / "data" / "stocks.json"
 REPORT_SOURCE_SIGNATURE = hashlib.sha256(
-    b"pinned-nifty200-report-v3-validated-export:" + STOCK_LIST_PATH.read_bytes()
+    b"pinned-nifty750-report-v4-validated-export:" + STOCK_LIST_PATH.read_bytes()
 ).hexdigest()
 
 
 class ReportUniverseMismatch(Exception):
-    """The generated workbook does not use the pinned NIFTY 200 universe."""
+    """The generated workbook does not use the pinned NIFTY 750 universe."""
 
 
 render_sidebar()
 st.title("Reports")
 st.caption(
     "Generate the last 70 trading days and RSI ranking. "
-    "Both sheets use the auto-synced NIFTY 200 constituent list in data/stocks.json."
+    "Both sheets use the auto-synced NIFTY 750 constituent list in data/stocks.json."
 )
 
 render_ai_recommendations_on_demand("reports", limit=5, show_summary=False)
@@ -107,9 +107,9 @@ if st.button("Generate Excel Report", type="primary"):
         finally:
             workbook.close()
 
-        if len(expected_symbols) != 200:
+        if not expected_symbols:
             raise ReportUniverseMismatch(
-                f"NIFTY 200 snapshot should contain 200 unique symbols; found {len(expected_symbols)}."
+                "NIFTY 750 snapshot contains no unique symbols."
             )
 
         if price_symbols != expected_symbols or ranking_symbols != expected_symbols:
@@ -118,7 +118,7 @@ if st.button("Generate Excel Report", type="primary"):
             missing_ranking = sorted(expected_symbols - ranking_symbols)
             extra_ranking = sorted(ranking_symbols - expected_symbols)
             raise ReportUniverseMismatch(
-                "Generated report does not match the auto-synced NIFTY 200 list. "
+                "Generated report does not match the auto-synced NIFTY 750 list. "
                 f"Closing-price sheet missing: {missing_price}; extra: {extra_price}. "
                 f"RSI sheet missing: {missing_ranking}; extra: {extra_ranking}."
             )

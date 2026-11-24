@@ -256,7 +256,7 @@ class GeminiService:
             f"Budget: {budget_text}\n"
             f"Existing holdings / constraints: {holdings_text}\n\n"
             "TASK\n"
-            f"Suggest at most {max_picks} NIFTY 200 stocks for the user to consider purchasing now. "
+            f"Suggest at most {max_picks} NIFTY 750 stocks for the user to consider purchasing now. "
             "Mix actions sensibly for the risk profile. Every stock must appear in the snapshot. "
             "For each pick include the RSI evidence, the 30-day trend, an allocation percentage "
             "of the budget (total allocations must not exceed 100), and the main risk. "

@@ -84,12 +84,17 @@ class WeeklyBollingerService:
     The supplied NIFTY Total Market constituent workbook is the authoritative
     universe for this report. Each calculation uses the last 55 completed NSE
     trading-session closes, sourced from market-wide daily bhavcopy files.
+    Stocks are ranked by how far the latest close is above (+) or below (-)
+    the middle band, as a percentage of the middle band.
     """
 
     UNIVERSE_FILE = Path(__file__).resolve().parents[2] / "data" / "ind_niftytotalmarket_list.xlsx"
     BHAVCOPY_CACHE_FILE = Path(__file__).resolve().parents[2] / "data" / "nifty750_bhavcopy_cache.sqlite3"
     DEFAULT_PERIOD = 55
     DEFAULT_MULTIPLIER = 3.7
+    # Stored with each snapshot so one made under an older ranking rule can be
+    # recognised and re-ranked.
+    RANKING_BASIS = "close_vs_middle_pct"
     # A bounded pool speeds up the cold fetch while keeping NSE request bursts
     # well below the requested 50–100 connection range that can trigger throttling.
     MAX_CONCURRENT_REQUESTS = 24
@@ -284,19 +289,43 @@ class WeeklyBollingerService:
         values = values.iloc[-period:]
         mean = float(values.mean())
         deviation = float(np.sqrt(((values - mean) ** 2).sum() / period))
+        latest_close = float(values.iloc[-1])
         return {
             "symbol": symbol,
-            "latest_close": float(values.iloc[-1]),
+            "latest_close": latest_close,
             "middle_band": mean,
             "standard_deviation": deviation,
             "upper_band": mean + multiplier * deviation,
             "lower_band": mean - multiplier * deviation,
+            "close_vs_middle_pct": WeeklyBollingerService.percent_from_middle(latest_close, mean),
             "observations_used": len(values),
         }
 
     @staticmethod
+    def percent_from_middle(latest_close: float, middle_band: float) -> Optional[float]:
+        """Return how far the latest close is above (+) or below (-) the middle band, in percent."""
+        if not middle_band:
+            return None
+        return (latest_close - middle_band) / middle_band * 100.0
+
+    @staticmethod
     def sort_results(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        ranked = sorted(results, key=lambda row: (-row["upper_band"], row["symbol"]))
+        """Rank stocks by the latest close's percentage distance from the middle band.
+
+        With a middle band of 100, a close of 150 (+50%) ranks above a close of
+        130 (+30%), whatever the share price. Stocks below the middle band have
+        negative values and rank after every stock above it.
+        """
+        for row in results:
+            if row.get("close_vs_middle_pct") is None:
+                row["close_vs_middle_pct"] = WeeklyBollingerService.percent_from_middle(
+                    row["latest_close"], row["middle_band"]
+                )
+        ranked = sorted(results, key=lambda row: (
+            row["close_vs_middle_pct"] is None,
+            -(row["close_vs_middle_pct"] or 0.0),
+            row["symbol"],
+        ))
         for rank, row in enumerate(ranked, 1):
             row["rank"] = rank
         return ranked
@@ -373,6 +402,7 @@ class WeeklyBollingerService:
             "multiplier": multiplier,
             "history_start_date": dates[0],
             "price_data_source": "NSE market-wide daily bhavcopy",
+            "ranking_basis": cls.RANKING_BASIS,
         }
 
     @staticmethod
@@ -390,9 +420,13 @@ class WeeklyBollingerService:
 
         sheet = workbook.create_sheet("Bollinger Ranking")
         sheet.append(["Rank", "Stock Symbol", "Latest Closing Price", "Middle Band",
-                      "Standard Deviation", "Upper Band", "Lower Band", "Observations Used"])
+                      "% vs Middle Band", "Standard Deviation", "Upper Band", "Lower Band",
+                      "Observations Used"])
         for item in report["results"]:
+            percent = item.get("close_vs_middle_pct")
+            # Excel percentage cells hold fractions: 0.5 is shown as +50.00%.
             sheet.append([item["rank"], item["symbol"], item["latest_close"], item["middle_band"],
+                          percent / 100 if percent is not None else None,
                           item["standard_deviation"], item["upper_band"], item["lower_band"],
                           item["observations_used"]])
         missing = workbook.create_sheet("Unavailable Data")
@@ -410,6 +444,7 @@ class WeeklyBollingerService:
                     ("Trading sessions per calculation", report["period"]),
                     ("Population variance divisor", report["period"]),
                     ("Standard deviation multiplier", report["multiplier"]),
+                    ("Ranking", "Highest % vs Middle Band first: (Latest Closing Price - Middle Band) / Middle Band"),
                     ("Universe stocks", report["universe_count"]),
                     ("Eligible stocks", len(report["results"])),
                     ("Unavailable stocks", len(report["unavailable"]))):
@@ -426,9 +461,12 @@ class WeeklyBollingerService:
             for column in ws.columns:
                 ws.column_dimensions[column[0].column_letter].width = min(
                     max(max(len(str(cell.value or "")) for cell in column) + 2, 12), 60)
-        for row in sheet.iter_rows(min_row=2, min_col=3, max_col=7):
+        for row in sheet.iter_rows(min_row=2, min_col=3, max_col=8):
             for cell in row:
                 cell.number_format = "0.00"
+        for row in sheet.iter_rows(min_row=2, min_col=5, max_col=5):
+            for cell in row:
+                cell.number_format = "+0.00%;-0.00%;0.00%"
         for row in history.iter_rows(min_row=2, min_col=2):
             for cell in row:
                 cell.number_format = "0.00"

@@ -20,4 +20,10 @@ def refresh_weekly_bollinger_report(period: int, multiplier: float,
 
 
 def get_weekly_bollinger_report():
-    return st.session_state.get(REPORT_KEY)
+    report = st.session_state.get(REPORT_KEY)
+    if report and report.get("ranking_basis") != WeeklyBollingerService.RANKING_BASIS:
+        # A snapshot made before the ranking change already holds every value
+        # needed, so re-rank it instead of forcing a new NSE download.
+        report["results"] = WeeklyBollingerService.sort_results(report["results"])
+        report["ranking_basis"] = WeeklyBollingerService.RANKING_BASIS
+    return report
