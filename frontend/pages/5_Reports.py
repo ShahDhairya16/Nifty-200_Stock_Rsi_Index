@@ -126,6 +126,15 @@ if st.button("Generate Excel Report", type="primary"):
         st.session_state["latest_report"] = result
         st.session_state["latest_report_source_signature"] = REPORT_SOURCE_SIGNATURE
         st.success(f"Report generated for {result['latest_trade_date']}.")
+        complete_closes = result.get("stocks_with_all_70_closes", result["stocks"])
+        complete_rsi = result.get("stocks_with_complete_rsi", result["stocks"])
+        if complete_closes < result["stocks"] or complete_rsi < result["stocks"]:
+            st.warning(
+                f"Complete 70-day closes: {complete_closes}/{result['stocks']} · "
+                f"complete RSI: {complete_rsi}/{result['stocks']}. "
+                "See the Data Coverage sheet for securities without exchange data "
+                "or with insufficient history."
+            )
     except ReportUniverseMismatch as exc:
         st.error(str(exc))
     except Exception:
