@@ -60,38 +60,25 @@ class ExcelReportService:
         )
 
         # ------------------------------------------------------------------
-        # 1b. Backfill only when necessary.
-        #
-        # Newly added constituents need their history fetched before the price
-        # matrix is built. Existing constituents are already covered by the
-        # sidebar refresh, so we do not run a full 200-stock coverage scan (and
-        # possible NSE requests) on every report generation.
+        # 1b. Ensure every constituent has recent history before building the
+        # report. The universe may have grown since the last refresh, and older
+        # constituents may have stale prices, so check all active stocks.
         # ------------------------------------------------------------------
-        new_symbols = universe_summary.get("new_symbols") or []
-        if new_symbols or refresh_market_data:
-            try:
-                if refresh_market_data:
-                    history_summary = HistoricalDataService.ensure_minimum_history(
-                        end_date=report_end
-                    )
-                    backfill_summary = history_summary.get("backfill") or {}
-                else:
-                    backfill_summary = HistoricalDataService.backfill_historical_data(
-                        start_date=HistoricalDataService.history_start_date(report_end),
-                        end_date=report_end,
-                        symbols=new_symbols,
-                    )
-                if backfill_summary.get("total_records_processed", 0) > 0:
-                    RSIService.compute_all_active_stocks_rsi()
-                for item in backfill_summary.get("errors", []):
-                    logger.warning(
-                        "NIFTY 750 Excel report history backfill failed for "
-                        f"{item.get('symbol')}: {item.get('error')}"
-                    )
-            except Exception as exc:
+        try:
+            history_summary = HistoricalDataService.ensure_minimum_history(
+                end_date=report_end
+            )
+            backfill_summary = history_summary.get("backfill") or {}
+            for item in backfill_summary.get("errors", []):
                 logger.warning(
-                    f"NIFTY 750 Excel report history backfill skipped/failed: {exc}"
+                    "NIFTY 750 Excel report history backfill failed for "
+                    f"{item.get('symbol')}: {item.get('error')}"
                 )
+            RSIService.compute_all_active_stocks_rsi()
+        except Exception as exc:
+            raise RuntimeError(
+                f"Could not prepare recent prices and RSI for the full NIFTY 750 universe: {exc}"
+            ) from exc
 
         # ------------------------------------------------------------------
         # 2. Load the current active NIFTY 750 universe.
@@ -193,6 +180,16 @@ class ExcelReportService:
             .reindex(columns=symbols)
             .reset_index()
         )
+
+        # The workbook must contain an actual close for every stock on every
+        # one of its 70 trading dates; reindexing alone only guarantees columns.
+        missing_close_counts = matrix[symbols].isna().sum()
+        missing_close_counts = missing_close_counts[missing_close_counts > 0]
+        if not missing_close_counts.empty:
+            raise ValueError(
+                "Could not retrieve all 70 closing prices for these NIFTY 750 "
+                f"stocks: {missing_close_counts.to_dict()}"
+            )
 
         # ------------------------------------------------------------------
         # 6. Load RSI data.
@@ -338,6 +335,17 @@ class ExcelReportService:
             "RSI 66",
             "Average RSI",
         ]
+
+        missing_rsi = ranking[
+            ranking[["RSI 22", "RSI 44", "RSI 66", "Average RSI"]]
+            .isna()
+            .any(axis=1)
+        ]["Symbol"].tolist()
+        if missing_rsi:
+            raise ValueError(
+                "RSI calculation is incomplete for these NIFTY 750 stocks: "
+                f"{missing_rsi}"
+            )
 
         # ------------------------------------------------------------------
         # 10. Validate the universe BEFORE creating/saving the workbook.
