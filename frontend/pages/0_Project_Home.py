@@ -15,7 +15,7 @@ with left:
 with right:
     with st.container(border=True):
         st.subheader("📉 NIFTY 750 Bollinger Band Strategy")
-        st.write("Weekly Bollinger calculations, upper-band ranking, and Excel download.")
+        st.write("Weekly Bollinger calculations, ranking by % above the middle band, and Excel download.")
         if st.button("Open NIFTY 750 Bollinger", type="primary", width="stretch", key="open_nifty750"):
             st.session_state["selected_project"] = "nifty750"
             st.rerun()

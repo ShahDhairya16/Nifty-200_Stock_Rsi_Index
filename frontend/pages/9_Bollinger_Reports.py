@@ -20,7 +20,8 @@ from frontend.utils.weekly_bollinger_report import (
 st.title("Reports")
 st.caption(
     "Generate the daily Bollinger report for the supplied NIFTY 750 universe. "
-    "It includes band values, the configured trading-session closes, and unavailable symbols."
+    "It includes band values ranked by % vs middle band, the configured trading-session closes, "
+    "and unavailable symbols."
 )
 
 period = int(st.session_state.get("bollinger_period_daily", WeeklyBollingerService.DEFAULT_PERIOD))
@@ -64,7 +65,7 @@ if st.button("Generate Excel Report", type="primary"):
         report = get_weekly_bollinger_report()
         with st.spinner("Preparing the Excel workbook…"):
             excel = WeeklyBollingerService.build_excel_report(report)
-        st.session_state["nifty750_daily_generated_report_v2"] = {
+        st.session_state["nifty750_daily_generated_report_v3"] = {
             "trade_date": report["latest_trade_date"],
             "period": report["period"],
             "multiplier": report["multiplier"],
@@ -79,7 +80,7 @@ if st.button("Generate Excel Report", type="primary"):
     except Exception as exc:
         st.error(f"Report generation failed: {exc}")
 
-generated = st.session_state.get("nifty750_daily_generated_report_v2")
+generated = st.session_state.get("nifty750_daily_generated_report_v3")
 if (generated and generated["trade_date"] <= target_trade_date
         and generated["period"] == period
         and abs(generated["multiplier"] - multiplier) < 1e-9):

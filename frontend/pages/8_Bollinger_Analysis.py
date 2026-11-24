@@ -22,12 +22,14 @@ else:
     by_symbol = {row["symbol"]: row for row in report["results"]}
     selected_symbol = st.selectbox("Stock", list(by_symbol), format_func=lambda s: f"{s} — {by_symbol[s]['company_name']}")
     stock = by_symbol[selected_symbol]
-    cols = st.columns(5)
+    cols = st.columns(6)
     cols[0].metric("Rank", f"#{stock['rank']}")
     cols[1].metric("Latest Close", f"{stock['latest_close']:.2f}")
     cols[2].metric("Middle Band", f"{stock['middle_band']:.2f}")
-    cols[3].metric("Upper Band", f"{stock['upper_band']:.2f}")
-    cols[4].metric("Lower Band", f"{stock['lower_band']:.2f}")
+    percent = stock.get("close_vs_middle_pct")
+    cols[3].metric("% vs Middle Band", f"{percent:+.2f}%" if percent is not None else "—")
+    cols[4].metric("Upper Band", f"{stock['upper_band']:.2f}")
+    cols[5].metric("Lower Band", f"{stock['lower_band']:.2f}")
     st.caption(
         f"{stock['observations_used']} daily closes through "
         f"{report['latest_trade_date']:%d %b %Y} · σ={stock['standard_deviation']:.2f} · "
