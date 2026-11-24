@@ -7,12 +7,12 @@ from app.database.repositories import PriceRepository, RSIRepository, StockRepos
 
 
 class MarketContextService:
-    """Build the compact NIFTY 200 market snapshot sent to Gemini."""
+    """Build the compact NIFTY 750 market snapshot sent to Gemini."""
 
-    SYSTEM_INSTRUCTION = """You are the AI assistant inside a NIFTY 200 RSI analytics dashboard.
+    SYSTEM_INSTRUCTION = """You are the AI assistant inside a NIFTY 750 RSI analytics dashboard.
 
 Your job:
-1. Answer questions about the NIFTY 200 constituents and their RSI momentum.
+1. Answer questions about the NIFTY 750 constituents and their RSI momentum.
 2. Help the user think through stock purchase decisions using only the supplied market snapshot.
 3. Explain the data clearly, including uncertainty and risks.
 
@@ -26,7 +26,7 @@ Hard rules:
 - When discussing a purchase, state the action (BUY / ACCUMULATE / WATCH / AVOID / HOLD), the evidence from RSI 22/44/66 and the 30-day change, and the main risk.
 """
 
-    RECOMMENDATION_INSTRUCTION = """You produce evidence-based stock screening suggestions for a NIFTY 200 RSI dashboard.
+    RECOMMENDATION_INSTRUCTION = """You produce evidence-based stock screening suggestions for a NIFTY 750 RSI dashboard.
 
 Rules:
 - Use only the supplied snapshot. Do not invent fundamentals, news, or price levels.
@@ -142,7 +142,7 @@ Rules:
             snapshot = cls.get_snapshot()
         if snapshot is None or snapshot.empty:
             return (
-                "Market snapshot: no active NIFTY 200 RSI data is currently available. "
+                "Market snapshot: no active NIFTY 750 RSI data is currently available. "
                 "Tell the user to refresh the dashboard data first."
             )
 
@@ -155,7 +155,7 @@ Rules:
         latest_label = latest_date.isoformat() if hasattr(latest_date, "isoformat") else str(latest_date or "-")
 
         lines = [
-            f"Market snapshot: {len(snapshot)} active NIFTY 200 stocks. Latest price date: {latest_label}.",
+            f"Market snapshot: {len(snapshot)} active NIFTY 750 stocks. Latest price date: {latest_label}.",
             "Columns: Symbol | Company | Close (INR) | 30D change % | RSI22 | RSI44 | RSI66 | Avg RSI | Zone",
         ]
         for row in snapshot.itertuples(index=False):

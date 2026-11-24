@@ -42,7 +42,7 @@ class DataUpdateService:
         """
         Main entry point called from the dashboard refresh.
         1. Determines which trading days are missing from MongoDB.
-        2. For each missing day, fetches NSE Bhavcopy and upserts NIFTY 200 prices.
+        2. For each missing day, fetches NSE Bhavcopy and upserts NIFTY 750 prices.
         3. Recomputes RSI metrics for all active stocks.
         Returns a summary dict with counts and any errors.
         """
@@ -176,16 +176,16 @@ class DataUpdateService:
                 # Normalise to standard OHLCV format
                 records = DataNormalizer.normalize_price_dataframe(df_bhav)
 
-                # Filter to NIFTY 200 active stocks only
-                nifty200_records = [r for r in records if r.get("symbol") in active_symbols]
+                # Filter to NIFTY 750 active stocks only
+                active_universe_records = [r for r in records if r.get("symbol") in active_symbols]
 
-                if not nifty200_records:
-                    message = f"Expected NSE trading-session data is unavailable for {date_str}; Bhavcopy had no active NIFTY 200 records."
+                if not active_universe_records:
+                    message = f"Expected NSE trading-session data is unavailable for {date_str}; Bhavcopy had no active NIFTY 750 records."
                     summary["errors"].append(message)
                     logger.warning(f"DataUpdateService: {message}")
                     continue
 
-                count = PriceRepository.bulk_upsert_prices(nifty200_records)
+                count = PriceRepository.bulk_upsert_prices(active_universe_records)
                 summary["days_with_data"] += 1
                 summary["total_records_upserted"] += count
                 logger.info(f"DataUpdateService: Upserted {count} price records for {date_str}.")

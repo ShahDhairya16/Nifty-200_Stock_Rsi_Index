@@ -7,9 +7,9 @@ from app.services.universe_update_service import UniverseUpdateService
 
 
 def main():
-    parser = argparse.ArgumentParser(description="NIFTY 200 RSI MongoDB data pipeline")
+    parser = argparse.ArgumentParser(description="NIFTY 750 RSI MongoDB data pipeline")
     parser.add_argument("--init-db", action="store_true", help="Initialize MongoDB collections and indexes")
-    parser.add_argument("--sync-universe", action="store_true", help="Sync NIFTY 200 universe and bundled snapshot from NSE")
+    parser.add_argument("--sync-universe", action="store_true", help="Sync NIFTY 750 universe and bundled snapshot from NSE")
     parser.add_argument("--backfill-historical", action="store_true", help="Backfill historical price data")
     parser.add_argument("--recover-missing", action="store_true", help="Update missing market data")
     parser.add_argument("--compute-rsi", action="store_true", help="Compute RSI metrics for active stocks")

@@ -12,15 +12,14 @@ st.set_page_config(page_title="NIFTY Analytics", page_icon="📊",
 
 
 @st.cache_data(ttl=21600, show_spinner=False)
-def _auto_sync_nifty200_universe():
-    """Check NSE once per cache window so index changes arrive automatically."""
+def _auto_sync_nifty750_universe(active_stock_count: int):
+    """Sync the supplied NIFTY 750 universe and fill missing RSI price history."""
     try:
-        from app.database.repositories import StockRepository
         from app.services.universe_update_service import UniverseUpdateService
 
         # A fresh database is populated explicitly from the sidebar/CLI. Do not
-        # trigger a full 200-stock backfill during the first page load.
-        if StockRepository.count_stocks(active_only=True) == 0:
+        # trigger a full 750-stock backfill during the first page load.
+        if active_stock_count == 0:
             return {"status": "SKIPPED", "reason": "empty database"}
 
         return UniverseUpdateService.auto_update(
@@ -40,12 +39,14 @@ if project == "home":
         position="hidden",
     )
 elif project == "nifty200":
+    from app.database.repositories import StockRepository
+
     try:
-        _auto_sync_nifty200_universe()
+        _auto_sync_nifty750_universe(StockRepository.count_stocks(active_only=True))
     except Exception:
         pass
     navigation = st.navigation({
-        "NIFTY 200 RSI": [
+        "NIFTY 750 RSI": [
             st.Page("pages/1_Dashboard.py", title="Dashboard", icon="📊", default=True),
             st.Page("pages/2_RSI_Ranking.py", title="RSI Ranking", icon="🏆"),
             st.Page("pages/3_Stock_Analysis.py", title="Stock Analysis", icon="📈"),

@@ -18,7 +18,7 @@ from frontend.utils.data_loader import get_ai_market_context
 render_sidebar()
 st.title("AI Advisor")
 st.caption(
-    "Ask questions about the NIFTY 200 RSI data or generate a purchase shortlist. "
+    "Ask questions about the NIFTY 750 RSI data or generate a purchase shortlist. "
     "Educational analysis only — not SEBI-registered investment advice."
 )
 
@@ -57,7 +57,7 @@ try:
         snapshot, context_text = get_ai_market_context()
 except Exception:
     st.error(
-        "Unable to load the NIFTY 200 market snapshot. Check the MongoDB settings "
+        "Unable to load the NIFTY 750 market snapshot. Check the MongoDB settings "
         "and refresh the dashboard data, then try again."
     )
     st.stop()
@@ -79,7 +79,7 @@ with chat_tab:
     st.subheader("Chat with your market data")
     st.caption(
         "The assistant sees the current RSI 22/44/66 values, average RSI, latest close, "
-        "and 30-day change for every active NIFTY 200 stock."
+        "and 30-day change for every active NIFTY 750 stock."
     )
 
     portfolio_context = st.text_area(
@@ -96,7 +96,7 @@ with chat_tab:
         st.session_state["ai_messages"] = []
 
     suggestions = [
-        "Which NIFTY 200 stocks are most oversold right now?",
+        "Which NIFTY 750 stocks are most oversold right now?",
         "Compare the top 3 momentum stocks and their risks.",
         "Build a balanced watchlist for a 12-month horizon.",
         "Explain how RSI 22, RSI 44 and RSI 66 differ.",
@@ -145,7 +145,7 @@ with chat_tab:
 with recommendations_tab:
     st.subheader("Generate a purchase shortlist")
     st.caption(
-        "Gemini screens the current NIFTY 200 RSI snapshot against your risk profile, "
+        "Gemini screens the current NIFTY 750 RSI snapshot against your risk profile, "
         "horizon and budget. All suggestions are educational and require your own research."
     )
 
@@ -178,7 +178,7 @@ with recommendations_tab:
         submitted = st.form_submit_button("Generate recommendations", type="primary")
 
     if submitted:
-        with st.spinner("Screening the NIFTY 200 snapshot..."):
+        with st.spinner("Screening the NIFTY 750 snapshot..."):
             try:
                 result = gemini.recommend(
                     risk_profile=risk_profile,
@@ -272,7 +272,7 @@ with recommendations_tab:
             }
             unknown = sorted(suggested_symbols - valid_symbols)
             if unknown:
-                st.warning(f"Ignore suggestions outside the current NIFTY 200 list: {', '.join(unknown)}")
+                st.warning(f"Ignore suggestions outside the current NIFTY 750 list: {', '.join(unknown)}")
 
             csv_data = table.to_csv(index=False).encode("utf-8")
             st.download_button(
@@ -297,7 +297,7 @@ with recommendations_tab:
         )
 
 with snapshot_tab:
-    st.subheader("Current NIFTY 200 RSI snapshot")
+    st.subheader("Current NIFTY 750 RSI snapshot")
     if snapshot is None or snapshot.empty:
         st.info("No active RSI data is available. Refresh the dashboard data first.")
     else:

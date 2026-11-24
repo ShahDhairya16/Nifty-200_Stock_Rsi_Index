@@ -95,7 +95,7 @@ def render_ai_recommendations_on_demand(section_key: str, limit: int = 5,
 
     with st.expander("AI purchase ideas (optional Gemini screening)", expanded=False):
         st.caption("Gemini screening runs only when requested and may take a little while.")
-        if st.button("Screen current NIFTY 200 snapshot", key=f"ai_screen_{section_key}"):
+        if st.button("Screen current NIFTY 750 snapshot", key=f"ai_screen_{section_key}"):
             with st.spinner("Gemini is screening the latest RSI snapshot…"):
                 st.session_state[AUTO_RECOMMENDATIONS_KEY] = get_auto_recommendations()
         result = st.session_state.get(AUTO_RECOMMENDATIONS_KEY)

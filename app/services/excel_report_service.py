@@ -33,7 +33,7 @@ class ExcelReportService:
         report_end = parse_date(end_date) if end_date is not None else date.today()
 
         # ------------------------------------------------------------------
-        # 1. Synchronize the pinned NIFTY 200 snapshot supplied with the repo.
+        # 1. Synchronize the pinned NIFTY 750 snapshot supplied with the repo.
         #
         # The Excel export intentionally uses data/stocks.json so it matches
         # the user's supplied constituent list instead of a changing live feed.
@@ -45,14 +45,14 @@ class ExcelReportService:
 
         if universe_summary.get("errors"):
             error_message = (
-                "NIFTY 200 universe synchronization failed: "
+                "NIFTY 750 universe synchronization failed: "
                 + "; ".join(str(error) for error in universe_summary["errors"])
             )
             logger.error(error_message)
             raise RuntimeError(error_message)
 
         logger.info(
-            "NIFTY 200 snapshot synchronized successfully from data/stocks.json. "
+            "NIFTY 750 snapshot synchronized successfully from data/stocks.json. "
             f"Fetched={universe_summary.get('total_fetched', 0)}, "
             f"New={universe_summary.get('new_stocks', 0)}, "
             f"Updated={universe_summary.get('updated_stocks', 0)}, "
@@ -85,16 +85,16 @@ class ExcelReportService:
                     RSIService.compute_all_active_stocks_rsi()
                 for item in backfill_summary.get("errors", []):
                     logger.warning(
-                        "NIFTY 200 Excel report history backfill failed for "
+                        "NIFTY 750 Excel report history backfill failed for "
                         f"{item.get('symbol')}: {item.get('error')}"
                     )
             except Exception as exc:
                 logger.warning(
-                    f"NIFTY 200 Excel report history backfill skipped/failed: {exc}"
+                    f"NIFTY 750 Excel report history backfill skipped/failed: {exc}"
                 )
 
         # ------------------------------------------------------------------
-        # 2. Load the current active NIFTY 200 universe.
+        # 2. Load the current active NIFTY 750 universe.
         #
         # This is the authoritative stock list for the complete report.
         # No stock list is derived from historical price/RSI collections.
@@ -103,7 +103,7 @@ class ExcelReportService:
 
         if not stocks:
             raise ValueError(
-                "No active NIFTY 200 stocks found in MongoDB after "
+                "No active NIFTY 750 stocks found in MongoDB after "
                 "universe synchronization."
             )
 
@@ -115,13 +115,13 @@ class ExcelReportService:
 
         if not active_symbols:
             raise ValueError(
-                "Active NIFTY 200 universe is empty after symbol normalization."
+                "Active NIFTY 750 universe is empty after symbol normalization."
             )
 
         symbols = sorted(active_symbols)
 
         logger.info(
-            f"Active NIFTY 200 count: {len(active_symbols)}"
+            f"Active NIFTY 750 count: {len(active_symbols)}"
         )
 
         # ------------------------------------------------------------------
@@ -157,7 +157,7 @@ class ExcelReportService:
 
         if prices.empty:
             raise ValueError(
-                "No price data found for the current active NIFTY 200 universe."
+                "No price data found for the current active NIFTY 750 universe."
             )
 
         # ------------------------------------------------------------------
@@ -169,7 +169,7 @@ class ExcelReportService:
 
         if not dates:
             raise ValueError(
-                "No trading dates found for the active NIFTY 200 universe."
+                "No trading dates found for the active NIFTY 750 universe."
             )
 
         prices = prices[
@@ -259,7 +259,7 @@ class ExcelReportService:
         #
         # Instead:
         #
-        #       Active NIFTY 200
+        #       Active NIFTY 750
         #              ↓
         #         LEFT JOIN RSI
         #
@@ -343,7 +343,7 @@ class ExcelReportService:
         # 10. Validate the universe BEFORE creating/saving the workbook.
         #
         # Both stock-level Excel sheets must contain exactly the same active
-        # NIFTY 200 universe.
+        # NIFTY 750 universe.
         # ------------------------------------------------------------------
 
         # Closing Price sheet symbols
@@ -377,11 +377,11 @@ class ExcelReportService:
         )
 
         logger.info(
-            "NIFTY 200 Excel universe validation:"
+            "NIFTY 750 Excel universe validation:"
         )
 
         logger.info(
-            f"Active NIFTY 200 count: {len(active_symbols)}"
+            f"Active NIFTY 750 count: {len(active_symbols)}"
         )
 
         logger.info(
@@ -416,7 +416,7 @@ class ExcelReportService:
 
         # ------------------------------------------------------------------
         # 11. Fail loudly if either stock-level sheet does not exactly match
-        #     the active NIFTY 200 universe.
+        #     the active NIFTY 750 universe.
         #
         # This prevents a wrong Excel report from being silently generated.
         # ------------------------------------------------------------------
@@ -427,7 +427,7 @@ class ExcelReportService:
             or unexpected_from_rsi
         ):
             raise ValueError(
-                "NIFTY 200 Excel universe validation failed. "
+                "NIFTY 750 Excel universe validation failed. "
                 f"Active={len(active_symbols)}, "
                 f"ClosingPrice={len(closing_price_symbols)}, "
                 f"RSIRanking={len(rsi_ranking_symbols)}, "
@@ -438,7 +438,7 @@ class ExcelReportService:
             )
 
         logger.info(
-            "NIFTY 200 Excel universe validation PASSED. "
+            "NIFTY 750 Excel universe validation PASSED. "
             "Active universe exactly matches both stock-level sheets."
         )
 
@@ -531,7 +531,7 @@ class ExcelReportService:
         # 14. Save workbook.
         # ------------------------------------------------------------------
         filename = (
-            f"NIFTY200_RSI_Report_"
+            f"NIFTY750_RSI_Report_"
             f"{report_end.isoformat()}_"
             f"{datetime.now():%H%M%S}.xlsx"
         )

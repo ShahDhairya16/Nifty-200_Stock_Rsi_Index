@@ -105,7 +105,7 @@ def _get_auto_stock_assessment_cached(symbol: str, api_key: str):
 
     zone_counts = snapshot["zone"].value_counts()
     market_summary = (
-        f"Market context: {len(snapshot)} active NIFTY 200 stocks. Zone counts: "
+        f"Market context: {len(snapshot)} active NIFTY 750 stocks. Zone counts: "
         + ", ".join(
             f"{zone}={int(zone_counts.get(zone, 0))}"
             for zone in ["Oversold", "Weak", "Neutral", "Positive", "Overbought", "No RSI"]
@@ -115,7 +115,7 @@ def _get_auto_stock_assessment_cached(symbol: str, api_key: str):
     symbol = str(symbol).strip().upper()
     matches = snapshot[snapshot["symbol"].astype(str).str.upper() == symbol]
     if matches.empty:
-        raise GeminiError(f"{symbol} is not in the current NIFTY 200 snapshot.")
+        raise GeminiError(f"{symbol} is not in the current NIFTY 750 snapshot.")
 
     row = matches.iloc[0]
     stock_row = (
