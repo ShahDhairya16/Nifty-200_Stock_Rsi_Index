@@ -22,10 +22,9 @@ def _run_special_session_update(bhavcopy, upsert_count):
          patch.object(service_module.PriceRepository, "latest_price_date", side_effect=[date(2026, 11, 6), date(2026, 11, 6) if not upsert_count else date(2026, 11, 8)]), \
          patch.object(service_module.StockRepository, "get_active_stocks", return_value=[{"symbol": "RELIANCE"}]), \
          patch("app.services.universe_update_service.UniverseUpdateService.auto_update", return_value={"errors": [], "rsi_recomputed": False}), \
-         patch.object(service_module.HistoricalDataService, "ensure_minimum_history", return_value={"backfill": {"total_records_processed": 0, "errors": []}}), \
          patch.object(service_module.NSEClient, "get_daily_market_data", return_value=bhavcopy), \
          patch.object(service_module.PriceRepository, "bulk_upsert_prices", return_value=upsert_count) as upsert, \
-         patch.object(service_module.RSIService, "compute_all_active_stocks_rsi", return_value={"successful_stocks": 1}) as recompute:
+         patch.object(service_module.RSIService, "compute_recent_active_stocks_rsi", return_value={"successful_stocks": 1}) as recompute:
         summary = DataUpdateService.fetch_and_update_missing_days()
     return summary, upsert, recompute
 

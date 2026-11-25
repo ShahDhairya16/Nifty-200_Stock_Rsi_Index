@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Callable
 
@@ -20,6 +21,8 @@ class DataUpdateService:
     Called from the dashboard sidebar Refresh button so the user never
     has to touch the CLI for daily data updates.
     """
+
+    MAX_CONCURRENT_REQUESTS = 24
 
     @staticmethod
     def _get_missing_trading_days(latest_date: date, up_to: date) -> List[date]:
@@ -64,7 +67,7 @@ class DataUpdateService:
         today = now_ist.date()
         # NSE's end-of-day Bhavcopy is published after the cash market closes.
         # During the session, the last complete price/RSI remains yesterday's.
-        target_date = today if now_ist.time() >= datetime.strptime("16:00", "%H:%M").time() else today - timedelta(days=1)
+        target_date = today if now_ist.time() >= datetime.strptime("15:30", "%H:%M").time() else today - timedelta(days=1)
 
         if latest_date is None:
             summary["status"] = "FAILED"
@@ -75,13 +78,14 @@ class DataUpdateService:
         summary["latest_date_before"] = format_date_iso(latest_date)
         logger.info(f"DataUpdateService: Last stored price date = {latest_date}, target complete date = {target_date}")
 
-        # Ensure the active universe matches the supplied workbook. Price
-        # history is fetched in one concurrent market-wide pass below.
+        # Keep the universe on its configured cadence. Forcing an NSE
+        # constituent check on every button press adds a slow network call
+        # without helping the daily price refresh.
         try:
             from app.services.universe_update_service import UniverseUpdateService
 
             summary["universe"] = UniverseUpdateService.auto_update(
-                force=True,
+                force=False,
                 backfill_new=False,
                 recompute_rsi=False,
             )
@@ -93,31 +97,8 @@ class DataUpdateService:
         except Exception as exc:
             logger.warning(f"DataUpdateService: Stock universe sync skipped/failed ({exc}). Using stored active stocks.")
 
-        # Refresh recent sessions for all active constituents through the same
-        # concurrent and cached market-file path as the Bollinger calculator.
-        try:
-            summary["history_backfill"] = RSIService.fetch_market_wide_closes(
-                period=70,
-                end_date=target_date,
-                progress_callback=progress_callback,
-            )
-            for message in summary["history_backfill"].get("errors", []):
-                summary["errors"].append(str(message))
-                logger.warning(f"DataUpdateService: Market history fetch error — {message}")
-        except Exception as exc:
-            message = f"Failed to ensure minimum price history: {exc}"
-            summary["errors"].append(message)
-            logger.error(f"DataUpdateService: {message}")
-
-        history_records = (summary["history_backfill"] or {}).get(
-            "total_records_processed", 0
-        )
-
         # If already up-to-date (or today is weekend / market closed today)
         if latest_date >= target_date:
-            if history_records > 0:
-                RSIService.compute_recent_active_stocks_rsi(period=70, force=True)
-                summary["rsi_recomputed"] = True
             summary["status"] = "UP_TO_DATE"
             summary["latest_date_after"] = format_date_iso(latest_date)
             logger.info("DataUpdateService: Data is already up-to-date.")
@@ -150,13 +131,23 @@ class DataUpdateService:
                     # individual NSE histories instead of silently treating a
                     # 403 as a holiday.
                     logger.warning(f"DataUpdateService: {bhav_error} Trying per-symbol history fallback.")
-                    fallback_records = []
-                    for symbol in sorted(active_symbols):
+                    def fetch_symbol_history(symbol):
                         history = NSEClient.get_stock_historical_data(symbol, trade_date, trade_date)
-                        fallback_records.extend(
+                        return [
                             record for record in DataNormalizer.normalize_price_dataframe(history)
                             if record.get("symbol") == symbol and record.get("trade_date") == trade_date
-                        )
+                        ]
+
+                    # The fallback otherwise makes hundreds of serial NSE
+                    # requests. Use the same bounded worker strategy as the
+                    # market-wide Bollinger fetch while limiting request bursts.
+                    worker_count = min(DataUpdateService.MAX_CONCURRENT_REQUESTS, len(active_symbols))
+                    with ThreadPoolExecutor(max_workers=max(1, worker_count)) as executor:
+                        fallback_records = [
+                            record
+                            for symbol_records in executor.map(fetch_symbol_history, sorted(active_symbols))
+                            for record in symbol_records
+                        ]
                     if not fallback_records:
                         raise ConnectionError(f"No daily or per-symbol price data available for {date_str}.") from bhav_error
                     count = PriceRepository.bulk_upsert_prices(fallback_records)
@@ -197,11 +188,7 @@ class DataUpdateService:
                     progress_callback(index, len(missing_days), date_str)
 
         # Always recompute RSI after any new prices land
-        if (
-            summary["days_with_data"] > 0
-            or summary["total_records_upserted"] > 0
-            or history_records > 0
-        ):
+        if summary["days_with_data"] > 0 or summary["total_records_upserted"] > 0:
             try:
                 rsi_summary = RSIService.compute_recent_active_stocks_rsi(
                     period=70,
