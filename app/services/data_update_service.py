@@ -85,7 +85,10 @@ class DataUpdateService:
             from app.services.universe_update_service import UniverseUpdateService
 
             summary["universe"] = UniverseUpdateService.auto_update(
-                force=False,
+                # Reconcile the database against the bundled supplied
+                # workbook on every explicit refresh so retired/dummy rows
+                # are replaced immediately instead of waiting for the daily cadence.
+                force=True,
                 backfill_new=False,
                 recompute_rsi=False,
             )

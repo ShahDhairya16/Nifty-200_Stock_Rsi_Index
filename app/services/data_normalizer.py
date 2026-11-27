@@ -135,16 +135,33 @@ class DataNormalizer:
         """
         Normalizes stock universe constituent row (symbol, company_name, exchange, series).
         """
-        raw_symbol = row_dict.get("Symbol") or row_dict.get("symbol") or row_dict.get("TckrSymb")
+        normalized = {
+            DataNormalizer._clean_key(key): value
+            for key, value in row_dict.items()
+            if DataNormalizer._clean_key(key)
+        }
+        raw_symbol = next(
+            (normalized[key] for key in ("symbol", "tckrsymb", "ticker") if normalized.get(key)),
+            None,
+        )
         if not raw_symbol:
             return None
 
         symbol = str(raw_symbol).strip().upper()
-        company_name = row_dict.get("Company Name") or row_dict.get("company_name") or row_dict.get("FinInstrmNm")
+        company_name = next(
+            (normalized[key] for key in ("companyname", "fininstrmnm") if normalized.get(key)),
+            None,
+        )
         if company_name:
             company_name = str(company_name).strip()
+        else:
+            # Symbol-only constituent exports do not include company names.
+            company_name = symbol
             
-        series = row_dict.get("Series") or row_dict.get("series") or row_dict.get("SctySrs") or "EQ"
+        series = next(
+            (normalized[key] for key in ("series", "sctysrs") if normalized.get(key)),
+            "EQ",
+        )
         if series:
             series = str(series).strip().upper()
 

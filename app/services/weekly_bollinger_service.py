@@ -88,7 +88,9 @@ class WeeklyBollingerService:
     the middle band, as a percentage of the middle band.
     """
 
-    UNIVERSE_FILE = Path(__file__).resolve().parents[2] / "data" / "ind_niftytotalmarket_list.xlsx"
+    # The dated workbook supplied with the project is the authoritative
+    # constituent list for both the RSI and Bollinger methods.
+    UNIVERSE_FILE = Path(__file__).resolve().parents[2] / "NIFTY 750 18-11-2026.xlsx"
     BHAVCOPY_CACHE_FILE = Path(__file__).resolve().parents[2] / "data" / "nifty750_bhavcopy_cache.sqlite3"
     DEFAULT_PERIOD = 55
     DEFAULT_MULTIPLIER = 3.7
@@ -102,21 +104,36 @@ class WeeklyBollingerService:
 
     @classmethod
     def fetch_stock_universe(cls) -> List[Dict[str, str]]:
-        """Read the user-supplied NIFTY Total Market constituent workbook."""
+        """Read the user-supplied NIFTY 750 constituent workbook."""
         if not cls.UNIVERSE_FILE.exists():
             raise FileNotFoundError(f"NIFTY universe workbook is missing: {cls.UNIVERSE_FILE}")
         frame = pd.read_excel(cls.UNIVERSE_FILE)
-        required = {"Company Name", "Symbol"}
-        if not required.issubset(frame.columns):
-            raise ValueError(f"Universe workbook must contain columns: {sorted(required)}")
+        symbol_column = next(
+            (column for column in frame.columns if DataNormalizer._clean_key(column) in {"symbol", "tckrsymb", "ticker"}),
+            None,
+        )
+        if symbol_column is None:
+            raise ValueError("NIFTY 750 workbook must contain a SYMBOL column.")
+        metadata_path = Path(__file__).resolve().parents[2] / "data" / "ind_niftytotalmarket_list.xlsx"
+        company_names: Dict[str, str] = {}
+        if metadata_path.exists():
+            metadata_frame = pd.read_excel(metadata_path)
+            for metadata_row in metadata_frame.to_dict(orient="records"):
+                metadata = DataNormalizer.normalize_stock_metadata(metadata_row)
+                if metadata and metadata.get("company_name"):
+                    company_names[metadata["symbol"]] = metadata["company_name"]
         constituents: Dict[str, Dict[str, str]] = {}
         for row in frame.to_dict(orient="records"):
-            stock = DataNormalizer.normalize_stock_metadata(row)
+            stock = DataNormalizer.normalize_stock_metadata({**row, "Symbol": row.get(symbol_column)})
             if stock and stock["symbol"]:
                 symbol = stock["symbol"]
+                # NSE index exports include a summary row alongside the
+                # constituent rows. It is not an investable stock symbol.
+                if symbol == "NIFTY TOTAL MARKET":
+                    continue
                 constituents[symbol] = {
-                    "symbol": symbol,
-                    "company_name": stock.get("company_name") or symbol,
+                    **stock,
+                    "company_name": company_names.get(symbol) or stock.get("company_name") or symbol,
                     "series": stock.get("series") or "EQ",
                 }
         if not constituents:
