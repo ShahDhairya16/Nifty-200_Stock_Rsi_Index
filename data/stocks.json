@@ -1475,7 +1475,7 @@
     "symbol": "DIACABS",
     "company_name": "Diamond Power Infrastructure Ltd.",
     "exchange": "NSE",
-    "series": "BE",
+    "series": "EQ",
     "active": true,
     "added_date": "2026-11-24"
   },
@@ -1528,38 +1528,6 @@
     "added_date": "2026-09-08"
   },
   {
-    "symbol": "DUMMYHEG",
-    "company_name": "Dummy HEG Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-11-24"
-  },
-  {
-    "symbol": "DUMMYINGL1",
-    "company_name": "Dummy India Glycols ltd. 1",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-11-24"
-  },
-  {
-    "symbol": "DUMMYINGL2",
-    "company_name": "Dummy India Glycols ltd. 2",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-11-24"
-  },
-  {
-    "symbol": "DUMMYINXGN",
-    "company_name": "Dummy Inox Green Ltd.",
-    "exchange": "NSE",
-    "series": "EQ",
-    "active": true,
-    "added_date": "2026-11-24"
-  },
-  {
     "symbol": "DYNAMATECH",
     "company_name": "Dynamatic Technologies Ltd.",
     "exchange": "NSE",
@@ -1571,7 +1539,7 @@
     "symbol": "E2E",
     "company_name": "E2E NETWORKS Ltd.",
     "exchange": "NSE",
-    "series": "BE",
+    "series": "EQ",
     "active": true,
     "added_date": "2026-11-24"
   },
@@ -2323,7 +2291,7 @@
     "symbol": "HFCL",
     "company_name": "HFCL Ltd.",
     "exchange": "NSE",
-    "series": "BE",
+    "series": "EQ",
     "active": true,
     "added_date": "2026-11-24"
   },
@@ -2448,12 +2416,12 @@
     "added_date": "2026-09-08"
   },
   {
-    "symbol": "ICICIPRULI",
-    "company_name": "ICICI Prudential Life Insurance Company Ltd.",
+    "symbol": "ICICILIFE",
+    "company_name": "ICICI Life Insurance Ltd.",
     "exchange": "NSE",
     "series": "EQ",
     "active": true,
-    "added_date": "2026-11-24"
+    "added_date": "2026-11-27"
   },
   {
     "symbol": "ICIL",
@@ -3323,7 +3291,7 @@
     "symbol": "LOTUSDEV",
     "company_name": "SRI LOTUS DEVELOPERS AND REALTY Ltd.",
     "exchange": "NSE",
-    "series": "BE",
+    "series": "EQ",
     "active": true,
     "added_date": "2026-11-24"
   },
@@ -3667,7 +3635,7 @@
     "symbol": "MTARTECH",
     "company_name": "MTAR Technologies Ltd.",
     "exchange": "NSE",
-    "series": "BE",
+    "series": "EQ",
     "active": true,
     "added_date": "2026-11-24"
   },
@@ -4915,7 +4883,7 @@
     "symbol": "SIGMAADV",
     "company_name": "SIGMA ADVANCED SYSTEMS LTD.",
     "exchange": "NSE",
-    "series": "BE",
+    "series": "EQ",
     "active": true,
     "added_date": "2026-11-24"
   },
@@ -5051,7 +5019,7 @@
     "symbol": "STLTECH",
     "company_name": "Sterlite Technologies Ltd.",
     "exchange": "NSE",
-    "series": "BE",
+    "series": "EQ",
     "active": true,
     "added_date": "2026-11-24"
   },
@@ -5564,14 +5532,6 @@
     "company_name": "Triveni Turbine Ltd.",
     "exchange": "NSE",
     "series": "EQ",
-    "active": true,
-    "added_date": "2026-11-24"
-  },
-  {
-    "symbol": "TRIVENIPT",
-    "company_name": "Triveni Power Transmission Ltd.",
-    "exchange": "NSE",
-    "series": "BE",
     "active": true,
     "added_date": "2026-11-24"
   },
