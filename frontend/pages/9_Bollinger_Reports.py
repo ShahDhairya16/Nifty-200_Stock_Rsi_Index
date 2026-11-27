@@ -14,6 +14,7 @@ from app.services.weekly_bollinger_service import WeeklyBollingerService
 from frontend.utils.weekly_bollinger_report import (
     get_weekly_bollinger_report,
     refresh_weekly_bollinger_report,
+    stock_universe_signature,
 )
 
 
@@ -35,11 +36,14 @@ report_end_date = st.date_input(
           "if the newest NSE file is unavailable, the whole report falls back to the latest available session."),
 )
 target_trade_date = WeeklyBollingerService.latest_completed_trade_date(report_end_date)
+universe = WeeklyBollingerService.fetch_stock_universe()
+universe_signature = stock_universe_signature(universe)
 
 if st.button("Generate Excel Report", type="primary"):
     current = get_weekly_bollinger_report()
     matches_snapshot = (
         current
+        and current.get("universe_signature") == universe_signature
         and current["latest_trade_date"] == target_trade_date
         and current["period"] == period
         and abs(current["multiplier"] - multiplier) < 1e-9
@@ -58,7 +62,8 @@ if st.button("Generate Excel Report", type="primary"):
 
             with st.spinner("Fetching and calculating the requested daily snapshot…"):
                 refresh_weekly_bollinger_report(
-                    period, multiplier, progress_callback=update_progress, as_of=report_end_date
+                    period, multiplier, progress_callback=update_progress, as_of=report_end_date,
+                    universe=universe,
                 )
             progress.empty()
 
@@ -72,6 +77,7 @@ if st.button("Generate Excel Report", type="primary"):
             "filename": excel["filename"],
             "data": excel["data"],
             "universe_count": report["universe_count"],
+            "universe_signature": report["universe_signature"],
             "eligible_count": len(report["results"]),
             "unavailable_count": len(report["unavailable"]),
             "unavailable": report["unavailable"],
@@ -81,7 +87,8 @@ if st.button("Generate Excel Report", type="primary"):
         st.error(f"Report generation failed: {exc}")
 
 generated = st.session_state.get("nifty750_daily_generated_report_v3")
-if (generated and generated["trade_date"] <= target_trade_date
+if (generated and generated.get("universe_signature") == universe_signature
+        and generated["trade_date"] <= target_trade_date
         and generated["period"] == period
         and abs(generated["multiplier"] - multiplier) < 1e-9):
     st.download_button(
@@ -100,6 +107,8 @@ if (generated and generated["trade_date"] <= target_trade_date
                 "symbol": "Stock Symbol", "company_name": "Company Name", "reason": "Reason",
             }), hide_index=True, width="stretch")
 else:
+    if generated and generated.get("universe_signature") != universe_signature:
+        st.info("The stock universe or trading-series data changed. Generate a new report to update this workbook.")
     current = get_weekly_bollinger_report()
     if current and current["latest_trade_date"] == target_trade_date:
         st.info(
