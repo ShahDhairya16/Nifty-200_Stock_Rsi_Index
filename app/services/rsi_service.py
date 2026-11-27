@@ -100,12 +100,18 @@ class RSIService:
     def compute_all_active_stocks_rsi(session: Optional[Any] = None, limit_days: Optional[int] = None) -> Dict[str, Any]:
         prices = PriceRepository.load_prices()
         stocks = StockRepository.get_active_stocks()
+        price_groups = {
+            symbol: group.sort_values("trade_date").copy()
+            for symbol, group in prices.groupby("symbol", sort=False)
+        } if not prices.empty else {}
         rows = []
         summary = {"total_stocks": len(stocks), "successful_stocks": 0, "failed_stocks": 0, "total_rsi_records_stored": 0, "errors": []}
 
         for stock in stocks:
             symbol = stock["symbol"]
-            data = prices[prices["symbol"] == symbol].sort_values("trade_date").copy()
+            data = price_groups.get(symbol)
+            if data is None:
+                data = prices.iloc[0:0].copy()
             if len(data) < 23:
                 summary["failed_stocks"] += 1
                 summary["errors"].append({"symbol": symbol, "reason": "Insufficient price records."})
@@ -146,16 +152,21 @@ class RSIService:
             return summary
         dates = sorted(prices["trade_date"].unique())[-period:]
         prices = prices[prices["trade_date"].isin(dates)]
+        price_groups = {
+            symbol: group.sort_values("trade_date").copy()
+            for symbol, group in prices.groupby("symbol", sort=False)
+        }
 
         if not force:
             latest_rsi = RSIRepository.get_latest_rsi_rankings()
             if not latest_rsi.empty:
                 latest_by_symbol = latest_rsi.set_index("symbol")
                 latest_prices = prices.groupby("symbol")["trade_date"].max()
+                row_counts = prices.groupby("symbol").size()
                 expected = [
                     (symbol, price_date)
                     for symbol, price_date in latest_prices.items()
-                    if len(prices[prices["symbol"] == symbol]) >= 23
+                    if row_counts.get(symbol, 0) >= 23
                 ]
                 up_to_date = bool(expected) and all(
                     symbol in latest_by_symbol.index
@@ -171,7 +182,9 @@ class RSIService:
         rows = []
         for stock in stocks:
             symbol = stock["symbol"]
-            data = prices[prices["symbol"] == symbol].sort_values("trade_date").copy()
+            data = price_groups.get(symbol)
+            if data is None:
+                data = prices.iloc[0:0].copy()
             if len(data) < 23:
                 summary["failed_stocks"] += 1
                 summary["errors"].append({"symbol": symbol, "reason": "Insufficient recent price records."})

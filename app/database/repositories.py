@@ -449,6 +449,27 @@ class RSIRepository:
             return pd.DataFrame()
 
         col = cls.get_collection()
+        latest_doc = col.find_one(
+            {"symbol": {"$in": active_symbols}},
+            {"_id": 0, "trade_date": 1},
+            sort=[("trade_date", DESCENDING)],
+        )
+        if latest_doc and latest_doc.get("trade_date"):
+            latest_records = list(
+                col.find(
+                    {"symbol": {"$in": active_symbols}, "trade_date": latest_doc["trade_date"]},
+                    {"_id": 0, "symbol": 1, "trade_date": 1, "rsi_22": 1, "rsi_44": 1,
+                     "rsi_66": 1, "average_rsi": 1},
+                ).sort("average_rsi", DESCENDING)
+            )
+            if len(latest_records) == len(active_symbols):
+                df = pd.DataFrame(latest_records)
+                df["trade_date"] = pd.to_datetime(df["trade_date"]).dt.date
+                df["company_name"] = df["symbol"].map(
+                    lambda sym: stocks.get(sym, {}).get("company_name") or sym
+                )
+                return df
+
         pipeline = [
             {"$match": {"symbol": {"$in": active_symbols}}},
             {"$sort": {"trade_date": DESCENDING}},

@@ -78,9 +78,8 @@ class DataUpdateService:
         summary["latest_date_before"] = format_date_iso(latest_date)
         logger.info(f"DataUpdateService: Last stored price date = {latest_date}, target complete date = {target_date}")
 
-        # Keep the universe on its configured cadence. Forcing an NSE
-        # constituent check on every button press adds a slow network call
-        # without helping the daily price refresh.
+        # This explicit refresh also reconciles active stocks to the supplied
+        # local workbook so removed symbols disappear immediately.
         try:
             from app.services.universe_update_service import UniverseUpdateService
 

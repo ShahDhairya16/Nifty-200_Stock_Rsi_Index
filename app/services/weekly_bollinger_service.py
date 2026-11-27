@@ -17,6 +17,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from nselib import capital_market
 
+from app.database.repositories import PriceRepository
 from app.services.data_normalizer import DataNormalizer
 from app.utils.nse_trading_calendar import NSE_HOLIDAYS, NSE_SPECIAL_SESSIONS
 
@@ -217,6 +218,43 @@ class WeeklyBollingerService:
 
         symbols = {item["symbol"]: str(item.get("series") or "EQ").upper() for item in universe}
         symbol_series = tuple(sorted(symbols.items()))
+
+        # RSI refresh already stores these daily closes in MongoDB. Reuse that
+        # complete window for Bollinger reports and avoid downloading 55
+        # market-wide files again. Fall back to NSE bhavcopy if the DB window
+        # is stale or too incomplete to represent the requested universe.
+        if bhavcopy_fetcher is None and trading_session_checker is None:
+            try:
+                stored = PriceRepository.load_prices(start_date=dates[0], end_date=dates[-1])
+                if not stored.empty:
+                    stored = stored[
+                        stored["symbol"].isin(symbols)
+                        & stored["trade_date"].isin(dates)
+                        & stored["close_price"].notna()
+                    ].drop_duplicates(["symbol", "trade_date"], keep="last")
+                    complete_symbols = stored.groupby("symbol")["trade_date"].nunique().ge(period).sum()
+                    latest_stored_date = stored["trade_date"].max()
+                    coverage = complete_symbols / max(1, len(symbols))
+                    if latest_stored_date >= dates[-1] and coverage >= 0.95:
+                        closes_by_date = {
+                            trade_date: {
+                                str(row.symbol): float(row.close_price)
+                                for row in day.itertuples(index=False)
+                            }
+                            for trade_date, day in stored.groupby("trade_date", sort=False)
+                        }
+                        daily_data = {
+                            trade_date: (closes_by_date.get(trade_date, {}), "")
+                            for trade_date in dates
+                        }
+                        if progress_callback:
+                            for completed, trade_date in enumerate(dates, start=1):
+                                progress_callback(completed, len(dates), trade_date.strftime("%Y-%m-%d"))
+                        return dates, daily_data
+            except Exception:
+                # MongoDB may be unavailable in a report-only deployment;
+                # the market-wide NSE fetch below remains the fallback.
+                pass
 
         def fetch_one_day(session_date):
             for attempt in range(2):
