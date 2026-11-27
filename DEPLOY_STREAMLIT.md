@@ -1,6 +1,6 @@
 # Deploying the NIFTY 750 RSI dashboard
 
-The Streamlit entry point is `frontend/streamlit_app.py`. It reads stock, price, and RSI records from MongoDB and uses the supplied NIFTY Total Market workbook at `data/ind_niftytotalmarket_list.xlsx` as the RSI universe (755 symbols in the current workbook). On startup and on **Refresh & Update Data**, the app syncs the workbook constituents, backfills new stocks, and recomputes RSI. Daily refresh checks missing NSE sessions against the NSE holiday calendar and fetches NSE Bhavcopy data for the active universe. The official holiday calendar is refreshed from NSE and cached for 24 hours. Muhurat sessions are detected from NSE's Diwali/Laxmi Pujan calendar entries; other separately announced special sessions may need to be added to the maintained exception list if NSE does not expose them in that calendar.
+The Streamlit entry point is `frontend/streamlit_app.py`. It reads stock, price, and RSI records from MongoDB. The supplied `NIFTY 750 18-11-2026.xlsx` workbook is the authoritative symbol universe for both RSI and Bollinger; `data/ind_niftytotalmarket_list.xlsx` supplies company names and NSE series metadata. On **Refresh & Update Data**, the app reconciles the active database stocks against the supplied workbook. Daily refresh checks missing NSE sessions against the NSE holiday calendar and fetches NSE Bhavcopy data for the active universe. The official holiday calendar is refreshed from NSE and cached for 24 hours. Muhurat sessions are detected from NSE's Diwali/Laxmi Pujan calendar entries; other separately announced special sessions may need to be added to the maintained exception list if NSE does not expose them in that calendar.
 
 ## Local development
 
@@ -64,7 +64,7 @@ Add a key from [Google AI Studio](https://aistudio.google.com/) as `GEMINI_API_K
 
 The dashboard generates an automatic shortlist on first load and caches it for 6 hours; per-stock AI views are cached per symbol. AI failures are retried after 5 minutes. A free-tier Gemini key allows only a small number of requests per minute/day, so heavy use can hit `429` quota errors. Use a key with higher quota for production.
 
-The RSI universe comes from `data/ind_niftytotalmarket_list.xlsx`, the same workbook used by the NIFTY 750 Bollinger section. On startup and on **Refresh & Update Data**, the app compares the workbook with MongoDB, updates `data/stocks.json`, deactivates removed symbols, backfills newly added symbols, and recomputes RSI. The check is throttled by `UNIVERSE_CHECK_INTERVAL_HOURS`; the Reports page uses the resulting snapshot. Failures leave the existing universe intact and are shown in the logs/sidebar.
+The RSI and Bollinger symbol universe comes from `NIFTY 750 18-11-2026.xlsx`. Company names and NSE trading series come from `data/ind_niftytotalmarket_list.xlsx`, including `RR` for the BAGMANE, BIRET, and EMBASSY REIT units. On **Refresh & Update Data**, the app reconciles MongoDB with the supplied universe. Failures leave the existing database universe intact and are shown in the logs/sidebar.
 
 ## MongoDB Atlas setup
 

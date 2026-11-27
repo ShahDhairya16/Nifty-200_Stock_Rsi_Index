@@ -115,13 +115,13 @@ class WeeklyBollingerService:
         if symbol_column is None:
             raise ValueError("NIFTY 750 workbook must contain a SYMBOL column.")
         metadata_path = Path(__file__).resolve().parents[2] / "data" / "ind_niftytotalmarket_list.xlsx"
-        company_names: Dict[str, str] = {}
+        stock_metadata: Dict[str, Dict[str, str]] = {}
         if metadata_path.exists():
             metadata_frame = pd.read_excel(metadata_path)
             for metadata_row in metadata_frame.to_dict(orient="records"):
                 metadata = DataNormalizer.normalize_stock_metadata(metadata_row)
-                if metadata and metadata.get("company_name"):
-                    company_names[metadata["symbol"]] = metadata["company_name"]
+                if metadata:
+                    stock_metadata[metadata["symbol"]] = metadata
         constituents: Dict[str, Dict[str, str]] = {}
         for row in frame.to_dict(orient="records"):
             stock = DataNormalizer.normalize_stock_metadata({**row, "Symbol": row.get(symbol_column)})
@@ -131,10 +131,13 @@ class WeeklyBollingerService:
                 # constituent rows. It is not an investable stock symbol.
                 if symbol == "NIFTY TOTAL MARKET":
                     continue
+                reference = stock_metadata.get(symbol, {})
                 constituents[symbol] = {
                     **stock,
-                    "company_name": company_names.get(symbol) or stock.get("company_name") or symbol,
-                    "series": stock.get("series") or "EQ",
+                    "company_name": reference.get("company_name") or stock.get("company_name") or symbol,
+                    # The supplied quote workbook has no Series column. Use
+                    # the bundled security metadata so REITs retain NSE RR.
+                    "series": reference.get("series") or stock.get("series") or "EQ",
                 }
         if not constituents:
             raise ValueError("The supplied NIFTY universe workbook contains no stock symbols.")
