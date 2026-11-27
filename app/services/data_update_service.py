@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Callable
 
+from app.config import config
 from app.database.repositories import StockRepository, PriceRepository, RSIRepository
 from app.services.data_normalizer import DataNormalizer
 from app.services.nse_client import NSEClient
@@ -22,7 +23,7 @@ class DataUpdateService:
     has to touch the CLI for daily data updates.
     """
 
-    MAX_CONCURRENT_REQUESTS = 24
+    MAX_CONCURRENT_REQUESTS = max(1, min(50, int(config.NSE_MAX_CONCURRENT_REQUESTS)))
 
     @staticmethod
     def _get_missing_trading_days(latest_date: date, up_to: date) -> List[date]:

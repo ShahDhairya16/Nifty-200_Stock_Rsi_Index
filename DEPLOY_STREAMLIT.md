@@ -45,6 +45,7 @@ For local use, copy `.env.example` to `.env` and set the values you need. The co
 | `NSE_MAX_RETRIES` | Number of NSE request attempts | `3` |
 | `NSE_RETRY_MIN_WAIT` | Minimum exponential retry wait, seconds | `2` |
 | `NSE_RETRY_MAX_WAIT` | Maximum exponential retry wait, seconds | `10` |
+| `NSE_MAX_CONCURRENT_REQUESTS` | Parallel NSE requests for history fallbacks and Bollinger fetches (clamped to 1–50) | `32` |
 | `GEMINI_API_KEY` | Google Gemini API key for the AI Advisor | Empty (AI page prompts for a key) |
 | `GEMINI_MODEL` | Preferred Gemini model used by the chatbot and recommendations | `gemini-3.5-flash-lite` |
 | `GEMINI_FALLBACK_MODELS` | Comma-separated models tried when the preferred model is unavailable or busy | `gemini-3.6-flash,gemini-3.5-flash,gemini-3.8-flash,gemini-3.7-flash,gemini-flash-latest,gemini-2.5-flash` |
@@ -107,6 +108,7 @@ HISTORICAL_END_DATE = ""
 NSE_MAX_RETRIES = 3
 NSE_RETRY_MIN_WAIT = 2
 NSE_RETRY_MAX_WAIT = 10
+NSE_MAX_CONCURRENT_REQUESTS = 32
 
 GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
 GEMINI_MODEL = "gemini-3.5-flash-lite"

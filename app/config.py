@@ -30,6 +30,9 @@ class Config:
     NSE_MAX_RETRIES: int = int(get_secret("NSE_MAX_RETRIES", 3))
     NSE_RETRY_MIN_WAIT: int = int(get_secret("NSE_RETRY_MIN_WAIT", 2))
     NSE_RETRY_MAX_WAIT: int = int(get_secret("NSE_RETRY_MAX_WAIT", 10))
+    # Bounded parallel requests for NSE history fallbacks and report fetches.
+    # Keep the default moderate; users may raise it up to 50 if NSE responds well.
+    NSE_MAX_CONCURRENT_REQUESTS: int = int(get_secret("NSE_MAX_CONCURRENT_REQUESTS", 32))
 
     # Google Gemini (AI assistant + stock recommendations)
     GEMINI_API_KEY: str = get_secret("GEMINI_API_KEY", "")

@@ -17,6 +17,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from nselib import capital_market
 
+from app.config import config
 from app.database.repositories import PriceRepository
 from app.services.data_normalizer import DataNormalizer
 from app.utils.nse_trading_calendar import NSE_HOLIDAYS, NSE_SPECIAL_SESSIONS
@@ -98,9 +99,8 @@ class WeeklyBollingerService:
     # Stored with each snapshot so one made under an older ranking rule can be
     # recognised and re-ranked.
     RANKING_BASIS = "close_vs_middle_pct"
-    # A bounded pool speeds up the cold fetch while keeping NSE request bursts
-    # well below the requested 50–100 connection range that can trigger throttling.
-    MAX_CONCURRENT_REQUESTS = 24
+    # Keep parallel NSE work configurable and cap it to avoid oversized bursts.
+    MAX_CONCURRENT_REQUESTS = max(1, min(50, int(config.NSE_MAX_CONCURRENT_REQUESTS)))
     MAX_LATEST_DATE_FALLBACK_SESSIONS = 10
 
     @classmethod
