@@ -34,19 +34,27 @@ class RSIService:
             for stock in stocks
         ]
         through = WeeklyBollingerService.latest_completed_trade_date(end_date)
-        dates = []
-        daily_data = {}
-        for fallback in range(WeeklyBollingerService.MAX_LATEST_DATE_FALLBACK_SESSIONS + 1):
-            dates, daily_data = WeeklyBollingerService.fetch_daily_market_closes(
-                universe,
-                through,
-                period,
-                progress_callback=progress_callback,
-            )
-            newest_error = daily_data.get(dates[-1], ({}, "missing session"))[1]
-            if not newest_error or fallback == WeeklyBollingerService.MAX_LATEST_DATE_FALLBACK_SESSIONS:
-                break
-            through = dates[-1] - timedelta(days=1)
+        dates = WeeklyBollingerService.expected_trading_days(through, period)
+        daily_data = WeeklyBollingerService.load_stored_daily_market_closes(universe, dates)
+        prices_already_stored = daily_data is not None
+        if prices_already_stored:
+            if progress_callback:
+                for completed, trade_date in enumerate(dates, start=1):
+                    progress_callback(completed, len(dates), trade_date.strftime("%Y-%m-%d"))
+        else:
+            daily_data = {}
+            for fallback in range(WeeklyBollingerService.MAX_LATEST_DATE_FALLBACK_SESSIONS + 1):
+                dates, daily_data = WeeklyBollingerService.fetch_daily_market_closes(
+                    universe,
+                    through,
+                    period,
+                    progress_callback=progress_callback,
+                    use_stored_prices=False,
+                )
+                newest_error = daily_data.get(dates[-1], ({}, "missing session"))[1]
+                if not newest_error or fallback == WeeklyBollingerService.MAX_LATEST_DATE_FALLBACK_SESSIONS:
+                    break
+                through = dates[-1] - timedelta(days=1)
 
         records = []
         close_counts = {stock["symbol"]: 0 for stock in stocks}
@@ -65,12 +73,13 @@ class RSIService:
                 if symbol in close_counts:
                     close_counts[symbol] += 1
 
-        stored = PriceRepository.bulk_upsert_closes(records)
+        stored = 0 if prices_already_stored else PriceRepository.bulk_upsert_closes(records)
         return {
             "total_stocks": len(stocks),
             "trading_days": len(dates),
             "latest_trade_date": dates[-1] if dates else None,
             "total_records_processed": stored,
+            "price_source": "MongoDB" if prices_already_stored else "NSE",
             "stocks_with_complete_closes": sum(count == period for count in close_counts.values()),
             "stocks_with_any_closes": sum(count > 0 for count in close_counts.values()),
             "stocks_missing_closes": sorted(

@@ -184,58 +184,19 @@ class ExcelReportService:
         missing_close_counts = missing_close_counts[missing_close_counts > 0]
 
         # ------------------------------------------------------------------
-        # 6. Load RSI data.
-        #
-        # The RSI collection can contain historical records for stocks that
-        # are no longer active. Explicitly filter them out.
+        # 6. Load only the latest RSI row per active symbol, not the full
+        # multi-year history for every stock.
         # ------------------------------------------------------------------
-        rsi = RSIRepository.load_rsi(end_date=report_end)
-
-        if rsi.empty:
-            rsi = pd.DataFrame(
-                columns=[
-                    "symbol",
-                    "trade_date",
-                    "rsi_22",
-                    "rsi_44",
-                    "rsi_66",
-                    "average_rsi",
-                ]
-            )
-        else:
-            rsi["symbol"] = (
-                rsi["symbol"]
-                .astype(str)
-                .str.strip()
-                .str.upper()
-            )
-
-            rsi = rsi[
-                rsi["symbol"].isin(active_symbols)
-            ].copy()
-
-        # ------------------------------------------------------------------
-        # 7. Get the latest RSI record for each active symbol.
-        # ------------------------------------------------------------------
-        if not rsi.empty:
-            latest = (
-                rsi
-                .sort_values(["symbol", "trade_date"])
-                .groupby("symbol", as_index=False)
-                .tail(1)
-                .copy()
-            )
-        else:
+        latest = RSIRepository.get_latest_rsi_rankings(end_date=report_end)
+        if latest.empty:
             latest = pd.DataFrame(
-                columns=[
-                    "symbol",
-                    "trade_date",
-                    "rsi_22",
-                    "rsi_44",
-                    "rsi_66",
-                    "average_rsi",
-                ]
+                columns=["symbol", "trade_date", "rsi_22", "rsi_44", "rsi_66", "average_rsi"]
             )
+        else:
+            latest["symbol"] = latest["symbol"].astype(str).str.strip().str.upper()
+            latest = latest[latest["symbol"].isin(active_symbols)][
+                ["symbol", "trade_date", "rsi_22", "rsi_44", "rsi_66", "average_rsi"]
+            ].copy()
 
         # ------------------------------------------------------------------
         # 8. Build RSI ranking from the ACTIVE UNIVERSE first.

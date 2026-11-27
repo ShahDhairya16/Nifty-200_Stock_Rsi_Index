@@ -111,8 +111,13 @@ class StockUniverseService:
         today = date.today().isoformat()
         for symbol, stock in fetched.items():
             if symbol in existing:
-                stock["added_date"] = existing[symbol].get("added_date", today)
-                summary["updated_stocks"] += 1
+                previous = existing[symbol]
+                stock["added_date"] = previous.get("added_date", today)
+                if any(
+                    previous.get(field) != stock.get(field)
+                    for field in ("company_name", "exchange", "series")
+                ) or previous.get("active") is not True:
+                    summary["updated_stocks"] += 1
             else:
                 stock["added_date"] = today
                 summary["new_stocks"] += 1
@@ -120,13 +125,15 @@ class StockUniverseService:
 
         for symbol, stock in existing.items():
             if symbol not in fetched:
-                stock["active"] = False
-                stock["removed_date"] = today
+                if stock.get("active") is not False:
+                    stock["active"] = False
+                    stock["removed_date"] = today
+                    summary["deactivated_stocks"] += 1
+                    summary["deactivated_symbols"].append(symbol)
                 fetched[symbol] = stock
-                summary["deactivated_stocks"] += 1
-                summary["deactivated_symbols"].append(symbol)
 
-        StockRepository.bulk_upsert_stocks(sorted(fetched.values(), key=lambda item: item["symbol"]))
+        if summary["new_stocks"] or summary["updated_stocks"] or summary["deactivated_stocks"]:
+            StockRepository.bulk_upsert_stocks(sorted(fetched.values(), key=lambda item: item["symbol"]))
         summary["total_fetched"] = len(rows)
 
         active_symbols = {

@@ -199,6 +199,40 @@ class WeeklyBollingerService:
             raise ValueError(f"Could not identify {period} NSE trading sessions before {through}.")
         return sorted(dates)
 
+    @staticmethod
+    def load_stored_daily_market_closes(
+        universe: List[Dict[str, str]], dates: List[date], min_coverage: float = 0.95,
+    ) -> Optional[Dict[date, tuple]]:
+        """Return a recent DB close window when it is current and sufficiently complete."""
+        if not dates or not universe:
+            return None
+        symbols = {str(item["symbol"]).strip().upper() for item in universe}
+        try:
+            stored = PriceRepository.load_prices(start_date=dates[0], end_date=dates[-1])
+            if stored.empty:
+                return None
+            stored = stored[
+                stored["symbol"].isin(symbols)
+                & stored["trade_date"].isin(dates)
+                & stored["close_price"].notna()
+            ].drop_duplicates(["symbol", "trade_date"], keep="last")
+            complete_symbols = stored.groupby("symbol")["trade_date"].nunique().ge(len(dates)).sum()
+            if stored.empty or stored["trade_date"].max() < dates[-1]:
+                return None
+            if complete_symbols / max(1, len(symbols)) < min_coverage:
+                return None
+            closes_by_date = {
+                trade_date: {
+                    str(row.symbol): float(row.close_price)
+                    for row in day.itertuples(index=False)
+                }
+                for trade_date, day in stored.groupby("trade_date", sort=False)
+            }
+            return {trade_date: (closes_by_date.get(trade_date, {}), "") for trade_date in dates}
+        except Exception:
+            # The NSE fetch path remains available when MongoDB cannot serve this window.
+            return None
+
     @classmethod
     def fetch_daily_market_closes(
         cls,
@@ -209,8 +243,10 @@ class WeeklyBollingerService:
         max_workers: int = MAX_CONCURRENT_REQUESTS,
         bhavcopy_fetcher: Optional[Callable] = None,
         trading_session_checker: Optional[Callable] = None,
+        use_stored_prices: bool = True,
     ) -> tuple:
         """Fetch one market-wide NSE bhavcopy for every requested session."""
+        can_use_database = use_stored_prices and bhavcopy_fetcher is None and trading_session_checker is None
         if trading_session_checker is None:
             trading_session_checker = cls.is_nse_trading_session
 
@@ -219,42 +255,15 @@ class WeeklyBollingerService:
         symbols = {item["symbol"]: str(item.get("series") or "EQ").upper() for item in universe}
         symbol_series = tuple(sorted(symbols.items()))
 
-        # RSI refresh already stores these daily closes in MongoDB. Reuse that
-        # complete window for Bollinger reports and avoid downloading 55
-        # market-wide files again. Fall back to NSE bhavcopy if the DB window
-        # is stale or too incomplete to represent the requested universe.
-        if bhavcopy_fetcher is None and trading_session_checker is None:
-            try:
-                stored = PriceRepository.load_prices(start_date=dates[0], end_date=dates[-1])
-                if not stored.empty:
-                    stored = stored[
-                        stored["symbol"].isin(symbols)
-                        & stored["trade_date"].isin(dates)
-                        & stored["close_price"].notna()
-                    ].drop_duplicates(["symbol", "trade_date"], keep="last")
-                    complete_symbols = stored.groupby("symbol")["trade_date"].nunique().ge(period).sum()
-                    latest_stored_date = stored["trade_date"].max()
-                    coverage = complete_symbols / max(1, len(symbols))
-                    if latest_stored_date >= dates[-1] and coverage >= 0.95:
-                        closes_by_date = {
-                            trade_date: {
-                                str(row.symbol): float(row.close_price)
-                                for row in day.itertuples(index=False)
-                            }
-                            for trade_date, day in stored.groupby("trade_date", sort=False)
-                        }
-                        daily_data = {
-                            trade_date: (closes_by_date.get(trade_date, {}), "")
-                            for trade_date in dates
-                        }
-                        if progress_callback:
-                            for completed, trade_date in enumerate(dates, start=1):
-                                progress_callback(completed, len(dates), trade_date.strftime("%Y-%m-%d"))
-                        return dates, daily_data
-            except Exception:
-                # MongoDB may be unavailable in a report-only deployment;
-                # the market-wide NSE fetch below remains the fallback.
-                pass
+        # The RSI report already stores this price window in MongoDB. Reuse it
+        # when current and complete enough, avoiding repeated NSE downloads.
+        if can_use_database:
+            stored = cls.load_stored_daily_market_closes(universe, dates)
+            if stored is not None:
+                if progress_callback:
+                    for completed, trade_date in enumerate(dates, start=1):
+                        progress_callback(completed, len(dates), trade_date.strftime("%Y-%m-%d"))
+                return dates, stored
 
         def fetch_one_day(session_date):
             for attempt in range(2):

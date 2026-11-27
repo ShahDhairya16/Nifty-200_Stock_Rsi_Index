@@ -438,7 +438,7 @@ class RSIRepository:
         return cls.load_rsi(symbol=symbol)
 
     @classmethod
-    def get_latest_rsi_rankings(cls) -> pd.DataFrame:
+    def get_latest_rsi_rankings(cls, end_date: Optional[Union[str, date]] = None) -> pd.DataFrame:
         """
         Retrieves the latest RSI record for each active stock, combined with company names,
         sorted by average_rsi descending.
@@ -449,8 +449,12 @@ class RSIRepository:
             return pd.DataFrame()
 
         col = cls.get_collection()
+        query: Dict[str, Any] = {"symbol": {"$in": active_symbols}}
+        if end_date is not None:
+            parsed_end = parse_date(end_date) if not isinstance(end_date, (datetime, date)) else end_date
+            query["trade_date"] = {"$lte": format_date_iso(parsed_end)}
         latest_doc = col.find_one(
-            {"symbol": {"$in": active_symbols}},
+            query,
             {"_id": 0, "trade_date": 1},
             sort=[("trade_date", DESCENDING)],
         )
@@ -471,8 +475,8 @@ class RSIRepository:
                 return df
 
         pipeline = [
-            {"$match": {"symbol": {"$in": active_symbols}}},
-            {"$sort": {"trade_date": DESCENDING}},
+            {"$match": query},
+            {"$sort": {"symbol": ASCENDING, "trade_date": DESCENDING}},
             {
                 "$group": {
                     "_id": "$symbol",
